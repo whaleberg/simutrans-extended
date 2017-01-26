@@ -7,6 +7,11 @@
 #include "../../player/simplay.h"
 #include "../../player/finance.h"
 
+// for creation of lines
+#include "../../simline.h"
+#include "../../simmenu.h"
+#include "../../simworld.h"
+
 
 using namespace script_api;
 
@@ -28,6 +33,8 @@ vector_tpl<sint64> const& get_player_stat(player_t *player, sint32 INDEX, sint32
 	}
 	if (player) {
 		finance_t *finance = player->get_finance();
+		// calculate current month
+		finance->calc_finance_history();
 		uint16 maxi = monthly ? MAX_PLAYER_HISTORY_MONTHS : MAX_PLAYER_HISTORY_YEARS;
 		for(uint16 i = 0; i < maxi; i++) {
 			sint64 m = atv ? ( monthly ? finance->get_history_veh_month((transport_type)TTYPE, i, INDEX) : finance->get_history_veh_year((transport_type)TTYPE, i, INDEX) )
@@ -48,14 +55,6 @@ vector_tpl<sint64> const& get_player_stat(player_t *player, sint32 INDEX, sint32
 	return v;
 }
 
-script_api::void_t change_player_account(player_t *player, sint64 delta)
-{
-	if (player) {
-		player->get_finance()->book_account(delta);
-	}
-	return script_api::void_t();
-}
-
 
 bool player_active(player_t *player)
 {
@@ -63,7 +62,68 @@ bool player_active(player_t *player)
 }
 
 
-void export_player(HSQUIRRELVM vm)
+// export of finance_t only here
+namespace script_api {
+	declare_specialized_param(finance_t*, param<player_t*>::typemask(), param<player_t*>::squirrel_type());
+
+	finance_t* param<finance_t*>::get(HSQUIRRELVM vm, SQInteger index)
+	{
+		player_t *player = param<player_t*>::get(vm, index);
+		return player ? player->get_finance() : NULL;
+	}
+};
+// also export transport_type - to get correct parameters
+namespace script_api {
+	declare_specialized_param(transport_type, "i", "integer");
+
+	transport_type param<transport_type>::get(HSQUIRRELVM vm, SQInteger index)
+	{
+		return (transport_type) max(param<uint16>::get(vm, index), TT_MAX-1);
+	}
+};
+
+
+SQInteger player_export_line_list(HSQUIRRELVM vm)
+{
+	if (player_t* player = param<player_t*>::get(vm, 1)) {
+		push_instance(vm, "line_list_x");
+		set_slot(vm, "player_id", player->get_player_nr());
+		return 1;
+	}
+	return SQ_ERROR;
+}
+
+call_tool_init player_create_line(player_t *player, waytype_t wt)
+{
+	simline_t::linetype lt = simline_t::get_linetype(wt);
+	if (lt == simline_t::MAX_LINE_TYPE) {
+		return "Invalid waytype provided";
+	}
+	// build param string (see schedule_list_gui_t::action_triggered)
+	cbuffer_t buf;
+	buf.printf( "c,0,%i,0,0|%i|", lt, lt);
+	return call_tool_init(TOOL_CHANGE_LINE | SIMPLE_TOOL, buf, 0, player);
+}
+
+call_tool_init player_book_account(player_t *player, sint32 delta)
+{
+	// build param string (see tool_change_player_t)
+	cbuffer_t buf;
+	buf.printf( "$,%i,%i", player->get_player_nr(), delta);
+	return call_tool_init(TOOL_CHANGE_PLAYER | SIMPLE_TOOL, buf, 0, welt->get_public_player());
+}
+
+SQInteger player_get_my_player(HSQUIRRELVM vm)
+{
+	return script_api::param<player_t*>::push(vm, get_my_player(vm) );
+}
+
+call_tool_init player_set_name(player_t *player, const char* name)
+{
+	return script_api::command_rename(player, 'p', player->get_player_nr(), name);
+}
+
+void export_player(HSQUIRRELVM vm, bool scenario)
 {
 	/**
 	 * Class to access player statistics.
@@ -76,9 +136,18 @@ void export_player(HSQUIRRELVM vm)
 	 * @param nr player number, 0 = standard player, 1 = public player
 	 * @typemask (integer)
 	 */
-	// actually defined simutrans/script/scenario_base.nut
+	// actually defined simutrans/script/script_base.nut
 	// register_function(..., "constructor", ...);
 
+	if (!scenario) {
+		/**
+		 * @returns player associated with the AI.
+		 * @ingroup ai_only
+		 * @typemask player_x()
+		 * @note Only available in AI mode.
+		 */
+		STATIC register_function(vm, &player_get_my_player, "self", 0, "", true);
+	}
 	/**
 	 * Return headquarter level.
 	 * @returns level, level is zero if no headquarter was built
@@ -94,6 +163,12 @@ void export_player(HSQUIRRELVM vm)
 	 * @returns name
 	 */
 	register_method(vm, &player_t::get_name,              "get_name");
+	/**
+	 * Sets name of company.
+	 * @param name the new name
+	 * @ingroup rename_func
+	 */
+	register_method(vm, &player_set_name, "set_name", true);
 	/**
 	 * Get monthly statistics of construction costs.
 	 * @returns array, index [0] corresponds to current month
@@ -185,17 +260,45 @@ void export_player(HSQUIRRELVM vm)
 	 */
 	register_method_fv(vm, &get_player_stat, "get_way_tolls",         freevariable3<sint32,sint32,bool>(ATV_WAY_TOLL, TT_ALL, true), true);
 
+	if (scenario) {
+		/**
+		 * Change bank account of player by given amount @p delta.
+		 * @param delta
+		 * @ingroup scen_only
+		 */
+		register_method(vm, player_book_account, "book_cash", true);
+	}
 	/**
-	 * Change bank account of player by given amount @p delta.
-	 * @param delta
-	 * @warning cannot be used in network games.
+	 * Returns the current account balance.
 	 */
-	register_method(vm, &change_player_account, "book_cash", true);
-
+	register_method(vm, &player_t::get_account_balance_as_double, "get_current_cash");
+	/**
+	 * Returns the current net worth [in 1/100 cr].
+	 */
+	register_method(vm, &finance_t::get_netwealth, "get_current_net_wealth");
+	/**
+	 * Returns the current maintenance [in 1/100 cr].
+	 */
+	register_method_fv(vm, &finance_t::get_maintenance_with_bits, "get_current_maintenance", freevariable<uint8>(TT_ALL));
 	/**
 	 * Returns whether the player (still) exists in the game.
+	 *
+	 * @deprecated Only available for api versions less than 120.1, see @ref get_api_version.
+	 * @typemask bool()
 	 */
-	register_method(vm, &player_active, "is_active", true);
+	// register_method(vm,, "is_active", true); implemented in scenario_compat.nut
+	/**
+	 * Exports list of lines of this player.
+	 * @typemask line_list_x()
+	 */
+	register_function(vm, &player_export_line_list, "get_line_list", 1, param<player_t*>::typemask());
+
+	/**
+	 * Creates a new line for the player of the given way type.
+	 * @param wt way type
+	 * @ingroup game_cmd
+	 */
+	register_method(vm, &player_create_line, "create_line", true);
 
 	end_class(vm);
 }

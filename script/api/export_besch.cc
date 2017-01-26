@@ -9,7 +9,7 @@
 using namespace script_api;
 
 
-static vector_tpl<GETBESCHFUNC> registered_desc_functions;
+static vector_tpl<GETBESCHFUNC> registered_besch_functions;
 
 
 SQInteger get_desc_pointer(HSQUIRRELVM vm)
@@ -18,7 +18,7 @@ SQInteger get_desc_pointer(HSQUIRRELVM vm)
 	// get type tag of class
 	sq_gettypetag(vm, 1, &tag);
 	plainstring name = param<plainstring>::get(vm, 2);
-	if (tag  &&  registered_desc_functions.is_contained((GETBESCHFUNC)tag) ) {
+	if (tag  &&  registered_besch_functions.is_contained((GETBESCHFUNC)tag) ) {
 		// call method
 		const void *desc = ((GETBESCHFUNC)tag)(name.c_str());
 		// set userpointer of class instance
@@ -29,13 +29,13 @@ SQInteger get_desc_pointer(HSQUIRRELVM vm)
 }
 
 
-void begin_desc_class(HSQUIRRELVM vm, const char* name, const char* base, GETBESCHFUNC func)
+void begin_besch_class(HSQUIRRELVM vm, const char* name, const char* base, GETBESCHFUNC func)
 {
 	SQInteger res = create_class(vm, name, base);
-	assert( SQ_SUCCEEDED(res) );
+	assert( SQ_SUCCEEDED(res) ); (void)res;
 	// store method to retrieve desc in typetag pointer
 	sq_settypetag(vm, -1, (void*)func);
-	registered_desc_functions.append_unique( func );
+	registered_besch_functions.append_unique( func );
 	// register constructor
 	register_function(vm, get_desc_pointer, "constructor", 2, "xs");
 	// now functions can be registered

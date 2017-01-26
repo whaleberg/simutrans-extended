@@ -11,8 +11,6 @@
 
 using namespace script_api;
 
-#define STATIC
-
 
 #ifdef DOXYGEN
 /**
@@ -78,7 +76,7 @@ mytime_t param<mytime_t>::get(HSQUIRRELVM vm, SQInteger index)
 
 SQInteger script_api::push_ribi(HSQUIRRELVM vm, ribi_t::ribi ribi)
 {
-	welt->get_scenario()->ribi_w2sq(ribi);
+	coordinate_transform_t::ribi_w2sq(ribi);
 	return param<uint8>::push(vm, ribi);
 }
 
@@ -86,7 +84,7 @@ SQInteger script_api::push_ribi(HSQUIRRELVM vm, ribi_t::ribi ribi)
 ribi_t::ribi script_api::get_ribi(HSQUIRRELVM vm, SQInteger index)
 {
 	ribi_t::ribi ribi = param<uint8>::get(vm, index) & ribi_t::all;
-	welt->get_scenario()->ribi_sq2w(ribi);
+	coordinate_transform_t::ribi_sq2w(ribi);
 	return ribi;
 }
 
@@ -117,6 +115,83 @@ map_ribi_ribi(backward);
 
 void export_simple(HSQUIRRELVM vm)
 {
+
+	/**
+	 * Class that holds 2d coordinates.
+	 * All functions that use this as input parameters will accept every data structure that contains members x and y.
+	 *
+	 * Coordinates always refer to the original rotation in @ref map.file.
+	 * They will be rotated if transferred between the game engine and squirrel.
+	 */
+	begin_class(vm, "coord");
+#ifdef SQAPI_DOC // document members
+	/// x-coordinate
+	integer x;
+	/// y-coordinate
+	integer y;
+	// operators are defined in script_base.nut
+	coord(int x, int y);
+	coord operator + (coord other);
+	coord operator - (coord other);
+	coord operator - ();
+	coord operator * (integer fac);
+	coord operator / (integer fac);
+	/**
+	 * Converts coordinate to string containing the coordinates in the current rotation of the map.
+	 *
+	 * Cannot be used in links in scenario texts. Use @ref href instead.
+	 */
+	string _tostring();
+	/**
+	 * Generates text to generate links to coordinates in scenario texts.
+	 * @param text text to be shown in the link
+	 * @returns a-tag with link in href
+	 * @see get_rule_text
+	 */
+	string href(string text);
+#endif
+	end_class(vm);
+
+	/**
+	 * Class that holds 3d coordinates.
+	 * All functions that use this as input parameters will accept every data structure that contains members x, y, and z.
+	 *
+	 * Coordinates always refer to the original rotation in @ref map.file.
+	 * They will be rotated if transferred between the game engine and squirrel.
+	 */
+	begin_class(vm, "coord3d", "coord");
+#ifdef SQAPI_DOC // document members
+	/// x-coordinate
+	integer x;
+	/// y-coordinate
+	integer y;
+	/// z-coordinate - height
+	integer z;
+	// operators are defined in script_base.nut
+	coord(int x, int y, int z);
+	coord3d operator + (coord3d other);
+	coord3d operator - (coord other);
+	coord3d operator + (coord3d other);
+	coord3d operator - (coord other);
+	coord3d operator - ();
+	coord3d operator * (integer fac);
+	coord3d operator / (integer fac);
+	/**
+	 * Converts coordinate to string containing the coordinates in the current rotation of the map.
+	 *
+	 * Cannot be used in links in scenario texts. Use @ref href instead.
+	 */
+	string _tostring();
+	/**
+	 * Generates text to generate links to coordinates in scenario texts.
+	 * @param text text to be shown in the link
+	 * @returns a-tag with link in href
+	 * @see get_rule_text
+	 */
+	string href(string text);
+#endif
+	end_class(vm);
+
 	/**
 	 * Class holding static methods to work with directions.
 	 * Directions are just bit-encoded integers.

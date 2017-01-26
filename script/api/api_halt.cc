@@ -9,13 +9,25 @@
 #include "../api_function.h"
 #include "../../simhalt.h"
 
+namespace script_api {
+
+	declare_specialized_param(haltestelle_t::tile_t, "t|x|y", "tile_x");
+
+
+	SQInteger param<haltestelle_t::tile_t>::push(HSQUIRRELVM vm, haltestelle_t::tile_t const& v)
+	{
+		return param<grund_t*>::push(vm, v.grund);
+	}
+
+};
+
 using namespace script_api;
 
-vector_tpl<sint64> const& get_halt_stat(halthandle_t halt, sint32 INDEX)
+vector_tpl<sint64> const& get_halt_stat(const haltestelle_t *halt, sint32 INDEX)
 {
 	static vector_tpl<sint64> v;
 	v.clear();
-	if (halt.is_bound()  &&  0<=INDEX  &&  INDEX<MAX_HALT_COST) {
+	if (halt  &&  0<=INDEX  &&  INDEX<MAX_HALT_COST) {
 		for(uint16 i = 0; i < MAX_MONTHS; i++) {
 			v.append( halt->get_finance_history(i, INDEX) );
 		}
@@ -39,15 +51,67 @@ SQInteger world_get_halt_by_index(HSQUIRRELVM vm)
 }
 
 
+SQInteger halt_export_convoy_list(HSQUIRRELVM vm)
+{
+	halthandle_t halt = param<halthandle_t>::get(vm, 1);
+	if (halt.is_bound()) {
+		push_instance(vm, "convoy_list_x");
+		set_slot(vm, "halt_id", halt.get_id());
+		return 1;
+	}
+	else {
+		sq_raise_error(vm, "Invalid halt id %d", halt.get_id());
+		return SQ_ERROR;
+	}
+}
+
+
+call_tool_init halt_set_name(halthandle_t halt, const char* name)
+{
+	if (!halt.is_bound()) {
+		return "Invalid halt provided";
+	}
+	return command_rename(halt->get_owner(), 'h', halt.get_id(), name);
+}
+
+
+SQInteger halt_export_line_list(HSQUIRRELVM vm)
+{
+	halthandle_t halt = param<halthandle_t>::get(vm, 1);
+	if (halt.is_bound()) {
+		push_instance(vm, "line_list_x");
+		set_slot(vm, "halt_id", halt.get_id());
+		return 1;
+	}
+	else {
+		sq_raise_error(vm, "Invalid halt id %d", halt.get_id());
+		return SQ_ERROR;
+	}
+}
+
+
+uint32 halt_get_capacity(const haltestelle_t *halt, const ware_desc_t *desc)
+{
+	// passenger has index 0, mail 1, everything else >=2
+	return halt  &&  desc  ?  halt->get_capacity(min( desc->get_catg_index(), 2 )) : 0;
+}
+
 // 0: not connected
 // 1: connected
 // -1: undecided
-sint8 is_halt_connected(halthandle_t a, halthandle_t b, const ware_desc_t *desc)
+sint8 is_halt_connected(const haltestelle_t *a, halthandle_t b, const ware_desc_t *desc)
 {
-	if (desc == 0  ||  !a.is_bound()  || !b.is_bound()) {
+	if (desc == 0  ||  a == NULL  ||  !b.is_bound()) {
 		return 0;
 	}
 	return a->is_connected(b, desc->get_catg_index());
+}
+
+
+// compare two halts to find out if they are the same
+SQInteger halt_compare(halthandle_t a, halthandle_t b)
+{
+	return (SQInteger)a.get_id() - (SQInteger)b.get_id();
 }
 
 
@@ -77,7 +141,7 @@ void export_halt(HSQUIRRELVM vm)
 	end_class(vm);
 
 	/**
-	 * Class to access halts.
+	 * Class to access halts / stations / bus stops.
 	 */
 	begin_class(vm, "halt_x", "extend_get");
 
@@ -86,12 +150,24 @@ void export_halt(HSQUIRRELVM vm)
 	 * @returns name
 	 */
 	register_method(vm, &haltestelle_t::get_name, "get_name");
+	/**
+	 * Sets station name.
+	 * @ingroup rename_func
+	 */
+	register_method(vm, &halt_set_name, "set_name", true);
 
 	/**
 	 * Station owner.
 	 * @returns owner
 	 */
 	register_method(vm, &haltestelle_t::get_owner, "get_owner");
+
+	/**
+	 * compare classes using metamethods
+	 * @param halt the other halt
+	 * @returns difference in the unique id of the halthandle
+	 */
+	register_method(vm, &halt_compare, "_cmp", true);
 
 	/**
 	 * Quick check if there is connection for certain freight to the other halt.
@@ -127,7 +203,7 @@ void export_halt(HSQUIRRELVM vm)
 	 * Get monthly statistics of number of happy passengers.
 	 * @returns array, index [0] corresponds to current month
 	 */
-	register_method_fv(vm, &get_halt_stat, "get_yappy", freevariable<sint32>(HALT_HAPPY), true);
+	register_method_fv(vm, &get_halt_stat, "get_happy", freevariable<sint32>(HALT_HAPPY), true);
 	/**
 	 * Get monthly statistics of number of unhappy passengers.
 	 *
@@ -151,7 +227,42 @@ void export_halt(HSQUIRRELVM vm)
 	 * Get monthly statistics of number of passengers that could walk to their destination.
 	 * @returns array, index [0] corresponds to current month
 	 */
-	register_method_fv(vm, &get_halt_stat, "get_too_slow", freevariable<sint32>(HALT_TOO_SLOW), true);
+	//register_method_fv(vm, &get_halt_stat, "get_walked", freevariable<sint32>(HALT_WALKED), true);
+	/**
+	 * Exports list of convoys that stop at this halt.
+	 * @typemask convoy_list_x()
+	 */
+	register_function(vm, &halt_export_convoy_list, "get_convoy_list", 1, param<halthandle_t>::typemask());
+	/**
+	 * Exports list of lines that serve this halt.
+	 * @typemask line_list_x()
+	 */
+	register_function(vm, &halt_export_line_list, "get_line_list", 1, param<halthandle_t>::typemask());
+	/**
+	 * Get list of tiles belonging to this station.
+	 */
+	register_method(vm, &haltestelle_t::get_tiles, "get_tile_list");
+	/**
+	 * Get list of factories connected to this station.
+	 */
+	register_method(vm, &haltestelle_t::get_fab_list, "get_factory_list");
+	/**
+	 * Returns amount of @p freight at this halt that is going to @p target
+	 * @param freight freight type
+	 * @param target coordinate of target
+	 */
+	register_method(vm, &haltestelle_t::get_ware_fuer_zielpos, "get_freight_to_dest");
+	/**
+	 * Returns amount of @p freight at this halt that scheduled to @p stop
+	 * @param freight freight type
+	 * @param stop next transfer stop
+	 */
+	//register_method(vm, &haltestelle_t::get_ware_fuer_zwischenziel, "get_freight_to_halt");
+	/**
+	 * Returns capacity of this halt for the given @p freight
+	 * @param freight freight type
+	 */
+	register_method(vm, &halt_get_capacity, "get_capacity", true);
 
 	end_class(vm);
 }

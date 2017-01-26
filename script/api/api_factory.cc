@@ -7,6 +7,7 @@
 #include "../api_function.h"
 #include "../../dataobj/scenario.h"
 #include "../../simfab.h"
+#include "../../besch/fabrik_besch.h"
 
 using namespace script_api;
 
@@ -19,12 +20,12 @@ SQInteger exp_factory_constructor(HSQUIRRELVM vm)
 	set_slot(vm, "y", y, 1);
 	// transform coordinates
 	koord pos(x,y);
-	welt->get_scenario()->koord_sq2w(pos);
+	coordinate_transform_t::koord_sq2w(pos);
 	fabrik_t *fab =  fabrik_t::get_fab(pos);
 	if (!fab) {
-		sq_raise_error(vm, "No factory found at (%s)", pos.get_str());
-		return -1;
+		return sq_raise_error(vm, "No factory found at (%s)", pos.get_str());
 	}
+	const factory_desc_t *desc = fab->get_desc();
 	// create input/output tables
 	for (int io=0; io<2; io++) {
 		sq_pushstring(vm, io==0 ? "input" : "output", -1);
@@ -42,6 +43,8 @@ SQInteger exp_factory_constructor(HSQUIRRELVM vm)
 			}
 			// set max value
 			set_slot(vm, "max_storage", prodslot[p].max >> fabrik_t::precision_bits, -1);
+			// production/consumption scaling
+			set_slot(vm, "scaling", io == 0 ? (sint64)desc->get_supplier(p)->get_consumption() : (sint64)desc->get_product(p)->get_factor(), -1);
 			// put class into table
 			sq_newslot(vm, -3, false);
 		}
@@ -76,6 +79,54 @@ vector_tpl<sint64> const& get_factory_production_stat(const ware_production_t *p
 	return v;
 }
 
+
+uint32 get_production_factor(const factory_product_desc_t *desc)
+{
+	return desc ? ( (1<< (DEFAULT_PRODUCTION_FACTOR_BITS-1)) + (uint32)desc->get_factor() * 100) >> DEFAULT_PRODUCTION_FACTOR_BITS : 0;
+}
+
+
+uint32 get_consumption_factor(const factory_supplier_desc_t *desc)
+{
+	return desc ? ( (1<< (DEFAULT_PRODUCTION_FACTOR_BITS-1)) + (uint32)desc->get_consumption() * 100) >> DEFAULT_PRODUCTION_FACTOR_BITS : 0;
+}
+
+
+vector_tpl<koord> const& factory_get_tile_list(fabrik_t *fab)
+{
+	static vector_tpl<koord> list;
+	fab->get_tile_list(list);
+	return list;
+}
+
+vector_tpl<halthandle_t> const& square_get_halt_list(planquadrat_t *plan); // api_tiles.cc
+
+vector_tpl<halthandle_t> const& factory_get_halt_list(fabrik_t *fab)
+{
+	planquadrat_t *plan = welt->access(fab->get_pos().get_2d());
+	return square_get_halt_list(plan);
+}
+
+
+call_tool_init factory_set_name(fabrik_t *fab, const char* name)
+{
+	return command_rename(welt->get_public_player(), 'f', fab->get_pos(), name);
+}
+
+
+SQInteger ware_production_get_production(HSQUIRRELVM vm)
+{
+	fabrik_t* fab = param<fabrik_t*>::get(vm, 1);
+	sint64 prod = 0;
+	if (fab) {
+		sint64 scaling = 0;
+		if (SQ_SUCCEEDED(get_slot(vm, "scaling", scaling, 1))) {
+			// see fabrik_t::step
+			prod = (scaling * welt->scale_with_month_length(fab->get_base_production()) * DEFAULT_PRODUCTION_FACTOR ) >> (8+8);
+		}
+	}
+	return param<sint64>::push(vm, prod);
+}
 
 SQInteger world_get_next_factory(HSQUIRRELVM vm)
 {
@@ -174,10 +225,16 @@ void export_factory(HSQUIRRELVM vm)
 	register_method(vm, &fabrik_t::get_suppliers, "get_suppliers");
 
 	/**
-	 * Get (untranslated) name of factory.
+	 * Get (translated or custom) name of factory.
 	 * @returns name
 	 */
 	register_method(vm, &fabrik_t::get_name, "get_name");
+
+	/**
+	 * Change name.
+	 * @ingroup rename_func
+	 */
+	register_method(vm, &factory_set_name, "set_name", true);
 
 	/**
 	 * Get monthly statistics of production.
@@ -245,6 +302,18 @@ void export_factory(HSQUIRRELVM vm)
 	 */
 	register_method_fv(vm, &get_factory_stat, "get_mail_arrived",   freevariable<sint32>(FAB_MAIL_ARRIVED), true);
 
+	/**
+	 * Get list of all tiles occupied by buildings belonging to this factory.
+	 * @returns array of tile_x objects
+	 */
+	register_method(vm, &factory_get_tile_list, "get_tile_list", true);
+
+	/**
+	 * Get list of all halts that serve this this factory.
+	 * @returns array of tile_x objects
+	 */
+	register_method(vm, &factory_get_halt_list, "get_halt_list", true);
+
 	// pop class
 	end_class(vm);
 
@@ -279,6 +348,12 @@ void export_factory(HSQUIRRELVM vm)
 	register_method_fv(vm, &get_factory_production_stat, "get_consumed",  freevariable<sint32>(FAB_GOODS_CONSUMED), true);
 
 	/**
+	 * Get monthly statistics of in-transit goods (for input slots).
+	 * @returns array, index [0] corresponds to current month
+	 */
+	register_method_fv(vm, &get_factory_production_stat, "get_in_transit",freevariable<sint32>(FAB_GOODS_TRANSIT), true);
+
+	/**
 	 * Get monthly statistics of delivered goods (for output slots).
 	 * @returns array, index [0] corresponds to current month
 	 */
@@ -289,6 +364,35 @@ void export_factory(HSQUIRRELVM vm)
 	 * @returns array, index [0] corresponds to current month
 	 */
 	register_method_fv(vm, &get_factory_production_stat, "get_produced",  freevariable<sint32>(FAB_GOODS_PRODUCED), true);
+
+	/**
+	 * Returns base maximum production of this good per month.
+	 * Does not take any productivity boost into account.
+	 * @typemask integer()
+	 */
+	register_function(vm, &ware_production_get_production, "get_base_production", 1, "x");
+
+	/**
+	 * Returns base maximum consumption of this good per month.
+	 * Does not take any productivity boost into account.
+	 * @typemask integer()
+	 */
+	register_function(vm, &ware_production_get_production, "get_base_consumption", 1, "x");
+
+	/**
+	 * Returns number of consumed units of this good for the production of 100 units of generic outputs unit.
+	 * Does not take any productivity boost into account.
+	 * @typemask integer()
+	 */
+	register_method(vm, &get_consumption_factor, "get_consumption_factor", 1, "x");
+
+	/**
+	 * Returns number of produced units of this good due to the production of 100 units of generic outputs unit.
+	 * Does not take any productivity boost into account.
+	 * @typemask integer()
+	 */
+	register_method(vm, &get_production_factor, "get_production_factor", 1, "x");
+
 
 	// pop class
 	end_class(vm);

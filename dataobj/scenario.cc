@@ -25,6 +25,7 @@
 #include "../script/script.h"
 #include "../script/export_objs.h"
 #include "../script/api/api.h"
+#include "../script/api_param.h"
 
 #include "../tpl/plainstringhashtable_tpl.h"
 
@@ -42,13 +43,13 @@ scenario_t::scenario_t(karte_t *w) :
 	goal_text("get_goal_text"),
 	rule_text("get_rule_text"),
 	result_text("get_result_text"),
-	about_text("get_about_text")
+	about_text("get_about_text"),
+	debug_text("get_debug_text")
 {
 	welt = w;
 	what_scenario = 0;
 
 	script = NULL;
-	rotation = 0;
 	won = false;
 	lost = false;
 	rdwr_error = false;
@@ -60,15 +61,13 @@ scenario_t::scenario_t(karte_t *w) :
 
 scenario_t::~scenario_t()
 {
-	if (script) {
-		delete script;
-	}
+	delete script;
 	clear_ptr_vector(forbidden_tools);
 	cached_text_files.clear();
 }
 
 
-const char* scenario_t::init( const char *scenario_base, const char *scenario_name_, karte_t *welt )
+const char* scenario_t::init(const char *scenario_base, const char *scenario_name_, karte_t *welt)
 {
 	this->welt = welt;
 	scenario_name = scenario_name_;
@@ -80,7 +79,7 @@ const char* scenario_t::init( const char *scenario_base, const char *scenario_na
 
 	// scenario script file
 	buf.append("scenario.nut");
-	if (!load_script( buf )) {
+	if (!load_script(buf)) {
 		dbg->warning("scenario_t::init", "could not load script file %s", (const char*)buf);
 		return "Loading scenario script failed";
 	}
@@ -89,43 +88,53 @@ const char* scenario_t::init( const char *scenario_base, const char *scenario_na
 	plainstring mapfile;
 
 	// load savegame
-	if ((err = script->call_function("get_map_file", mapfile))) {
+	if ((err = script->call_function(script_vm_t::FORCE, "get_map_file", mapfile))) {
 		dbg->warning("scenario_t::init", "error [%s] calling get_map_file", err);
 		return "No scenario map specified";
 	}
 
 	// if savegame-string == "<attach>" then do not load a savegame, just attach to running game.
-	if ( strcmp(mapfile, "<attach>") ) {
+	if (strcmp(mapfile, "<attach>")) {
 		// savegame location
 		buf.clear();
 		buf.printf("%s%s/%s", scenario_base, scenario_name_, mapfile.c_str());
-		if (!welt->load( buf )) {
+		if (!welt->load(buf)) {
 			dbg->warning("scenario_t::init", "error loading savegame %s", err, (const char*)buf);
 			return "Could not load scenario map!";
 		}
 		// set savegame name
 		buf.clear();
 		buf.printf("%s.sve", scenario_name.c_str());
-		welt->get_settings().set_filename( strdup(buf) );
+		welt->get_settings().set_filename(strdup(buf));
+		// re-initialize coordinate and rotation handling
+		script_api::coordinate_transform_t::initialize();
 	}
 
+	load_compatibility_script();
+
 	// load translations
-	translator::load_files_from_folder( scenario_path.c_str(), "scenario" );
+	translator::load_files_from_folder(scenario_path.c_str(), "scenario");
 	cached_text_files.clear();
 
 	what_scenario = SCRIPTED;
-	rotation = 0;
+
+	// callback
+	script->register_callback(&scenario_t::set_completion, "scenario_t_set_completed");
+
 	// register ourselves
 	welt->set_scenario(this);
 	welt->get_message()->clear();
 
 	// set start time
 	sint32 const time = welt->get_current_month();
-	welt->get_settings().set_starting_year( time / 12);
-	welt->get_settings().set_starting_month( time % 12);
+	welt->get_settings().set_starting_year(time / 12);
+	welt->get_settings().set_starting_month(time % 12);
+
+	// set my player number to PLAYER_UNOWNED
+	script->set_my_player(PLAYER_UNOWNED);
 
 	// now call startup function
-	if ((err = script->call_function("start"))) {
+	if ((err = script->call_function(script_vm_t::QUEUE, "start"))) {
 		dbg->warning("scenario_t::init", "error [%s] calling start", err);
 	}
 
@@ -133,35 +142,50 @@ const char* scenario_t::init( const char *scenario_base, const char *scenario_na
 }
 
 
+bool load_base_script(script_vm_t *script, const char* base)
+{
+	cbuffer_t buf;
+	buf.printf("%sscript/%s", env_t::program_dir, base);
+	if (const char* err = script->call_script(buf)) {
+		// should not happen
+		dbg->error("load_base_script", "error [%s] calling %s", err, (const char*)buf);
+		return false;
+	}
+	return true;
+}
+
+
 bool scenario_t::load_script(const char* filename)
 {
-	script = new script_vm_t();
+	script = new script_vm_t(scenario_path.c_str(), "script-scenario.log");
 	// load global stuff
 	// constants must be known compile time
 	export_global_constants(script->get_vm());
+	// load scripting base definitions
+	if (!load_base_script(script, "script_base.nut")) {
+		return false;
+	}
 	// load scenario base definitions
-	char basefile[1024];
-	sprintf( basefile, "%sscript/scenario_base.nut", env_t::program_dir );
-	const char* err = script->call_script(basefile);
-	if (err) { // should not happen ...
-		dbg->error("scenario_t::load_script", "error [%s] calling %s", err, basefile);
+	if (!load_base_script(script, "scenario_base.nut")) {
 		return false;
 	}
 
 	// register api functions
-	register_export_function(script->get_vm());
-	err = script->get_error();
-	if (err) {
-		dbg->error("scenario_t::load_script", "error [%s] calling register_export_function", err);
+	register_export_function(script->get_vm(), true);
+	if (script->get_error()) {
+		dbg->error("scenario_t::load_script", "error [%s] calling register_export_function", script->get_error());
 		return false;
 	}
 
 	// init strings
-	dynamic_string::init();
+	dynamic_string::init(script);
+	// register callback
+	if (env_t::server) {
+		nwc_scenario_t::init(script);
+	}
 
 	// load scenario definition
-	err = script->call_script(filename);
-	if (err) {
+	if (const char* err = script->call_script(filename)) {
 		dbg->error("scenario_t::load_script", "error [%s] calling %s", err, filename);
 		return false;
 	}
@@ -169,41 +193,30 @@ bool scenario_t::load_script(const char* filename)
 }
 
 
-void scenario_t::koord_w2sq(koord &k) const
+void scenario_t::load_compatibility_script()
 {
-	switch( rotation ) {
-		// 0: do nothing
-		case 1: k = koord(k.y, welt->get_size().y-1 - k.x); break;
-		case 2: k = koord(welt->get_size().x-1 - k.x, welt->get_size().y-1 - k.y); break;
-		case 3: k = koord(welt->get_size().x-1 - k.y, k.x); break;
-		default: break;
+	// check api version
+	plainstring api_version;
+	if (const char* err = script->call_function(script_vm_t::FORCE, "get_api_version", api_version)) {
+		dbg->warning("scenario_t::init", "error [%s] calling get_api_version", err);
+		api_version = "120.1";
+	}
+	if (api_version != "*") {
+		// load scenario compatibility script
+		if (load_base_script(script, "script_compat.nut")) {
+			plainstring dummy;
+			// call compatibility function
+			if (const char* err = script->call_function(script_vm_t::FORCE, "compat", dummy, api_version)) {
+				dbg->warning("scenario_t::init", "error [%s] calling compat", err);
+			}
+		}
 	}
 }
 
 
-void scenario_t::koord_sq2w(koord &k)
+void scenario_t::koord_sq2w(koord &k) const
 {
-	// just rotate back
-	rotation = 4 - rotation;
-	koord_w2sq(k);
-	// restore original rotation
-	rotation = 4 - rotation;
-}
-
-
-void scenario_t::ribi_w2sq(ribi_t::ribi &r) const
-{
-	if (rotation) {
-		r = ( ( (r << 4) | r) >> rotation) & 15;
-	}
-}
-
-
-void scenario_t::ribi_sq2w(ribi_t::ribi &r) const
-{
-	if (rotation) {
-		r = ( ( (r << 4) | r) << rotation) >> 4 & 15;
-	}
+	script_api::coordinate_transform_t::koord_sq2w(k);
 }
 
 
@@ -212,14 +225,14 @@ const char* scenario_t::get_forbidden_text()
 	static cbuffer_t buf;
 	buf.clear();
 	buf.append("<h1>Forbidden stuff:</h1><br>");
-	for(uint32 i=0; i<forbidden_tools.get_count(); i++) {
+	for (uint32 i = 0; i<forbidden_tools.get_count(); i++) {
 		scenario_t::forbidden_t &f = *forbidden_tools[i];
 		buf.printf("[%d] Player = %d, Tool = %d", i, f.player_nr, f.toolnr);
-		if (f.waytype!=invalid_wt) {
+		if (f.waytype != invalid_wt) {
 			buf.printf(", Waytype = %d", f.waytype);
 		}
 		if (f.type == forbidden_t::forbid_tool_rect) {
-			if (-128<f.hmin ||  f.hmax<127) {
+			if (-128<f.hmin || f.hmax<127) {
 				buf.printf(", Cube = (%s,%d) x ", f.pos_nw.get_str(), f.hmin);
 				buf.printf("(%s,%d)", f.pos_se.get_str(), f.hmax);
 			}
@@ -253,16 +266,16 @@ bool scenario_t::forbidden_t::operator <(const forbidden_t &other) const
 
 bool scenario_t::forbidden_t::operator ==(const forbidden_t &other) const
 {
-	bool eq =  (type == other.type)  &&  (player_nr == other.player_nr)  &&  (waytype == other.waytype);
+	bool eq = (type == other.type) && (player_nr == other.player_nr) && (waytype == other.waytype);
 	if (eq) {
-		switch(type) {
-			case forbid_tool_rect:
-				eq = eq  &&  (hmin == other.hmin)  &&  (hmax == other.hmax);
-				eq = eq  &&  (pos_nw == other.pos_nw);
-				eq = eq  &&  (pos_se == other.pos_se);
-			case forbid_tool:
-				eq = eq  &&  (toolnr == other.toolnr);
-				break;
+		switch (type) {
+		case forbid_tool_rect:
+			eq = eq && (hmin == other.hmin) && (hmax == other.hmax);
+			eq = eq && (pos_nw == other.pos_nw);
+			eq = eq && (pos_se == other.pos_se);
+		case forbid_tool:
+			eq = eq && (toolnr == other.toolnr);
+			break;
 		}
 	}
 	return eq;
@@ -279,20 +292,20 @@ scenario_t::forbidden_t::forbidden_t(const forbidden_t& other) :
 
 void scenario_t::forbidden_t::rotate90(const sint16 y_size)
 {
-	switch(type) {
-		case forbid_tool_rect: {
-			pos_nw.rotate90(y_size);
-			pos_se.rotate90(y_size);
-			sint16 x = pos_nw.x; pos_nw.x = pos_se.x; pos_se.x = x;
-		}
-		default: ;
+	switch (type) {
+	case forbid_tool_rect: {
+		pos_nw.rotate90(y_size);
+		pos_se.rotate90(y_size);
+		sint16 x = pos_nw.x; pos_nw.x = pos_se.x; pos_se.x = x;
+	}
+	default:;
 	}
 }
 
 
 uint32 scenario_t::find_first(const forbidden_t &other) const
 {
-	if (forbidden_tools.empty()  ||  *forbidden_tools.back() < other) {
+	if (forbidden_tools.empty() || *forbidden_tools.back() < other) {
 		// empty vector, or everything is smaller
 		return forbidden_tools.get_count();
 	}
@@ -300,13 +313,13 @@ uint32 scenario_t::find_first(const forbidden_t &other) const
 		// everything is larger
 		return forbidden_tools.get_count();
 	}
-	else if ( other <= *forbidden_tools[0] ) {
+	else if (other <= *forbidden_tools[0]) {
 		return 0;
 	}
 	// now: low < other <= high
-	uint32 low = 0, high = forbidden_tools.get_count()-1;
-	while(low+1 < high) {
-		uint32 mid = (low+high) / 2;
+	uint32 low = 0, high = forbidden_tools.get_count() - 1;
+	while (low + 1 < high) {
+		uint32 mid = (low + high) / 2;
 		if (*forbidden_tools[mid] < other) {
 			low = mid;
 			// now low < other
@@ -318,7 +331,7 @@ uint32 scenario_t::find_first(const forbidden_t &other) const
 	};
 	// still: low < other <= high
 	bool notok = other < *forbidden_tools[high];
-	return notok   ?  forbidden_tools.get_count()  :  high;
+	return notok ? forbidden_tools.get_count() : high;
 }
 
 
@@ -327,7 +340,7 @@ void scenario_t::intern_forbid(forbidden_t *test, bool forbid)
 	bool changed = false;
 	forbidden_t::forbid_type type = test->type;
 
-	for(uint32 i = find_first(*test); i < forbidden_tools.get_count()  &&  *forbidden_tools[i] <= *test; i++) {
+	for (uint32 i = find_first(*test); i < forbidden_tools.get_count() && *forbidden_tools[i] <= *test; i++) {
 		if (*test == *forbidden_tools[i]) {
 			// entry exists already
 			delete test;
@@ -345,7 +358,7 @@ void scenario_t::intern_forbid(forbidden_t *test, bool forbid)
 		changed = true;
 	}
 end:
-	if (changed  &&  type==forbidden_t::forbid_tool) {
+	if (changed  &&  type == forbidden_t::forbid_tool) {
 		need_toolbar_update = true;
 	}
 }
@@ -407,10 +420,10 @@ void scenario_t::allow_way_tool_rect(uint8 player_nr, uint16 tool_id, waytype_t 
 
 void scenario_t::forbid_way_tool_cube(uint8 player_nr, uint16 tool_id, waytype_t wt, koord3d pos_nw_0, koord3d pos_se_0, plainstring err)
 {
-	koord pos_nw( min(pos_nw_0.x, pos_se_0.x), min(pos_nw_0.y, pos_se_0.y));
-	koord pos_se( max(pos_nw_0.x, pos_se_0.x), max(pos_nw_0.y, pos_se_0.y));
-	sint8 hmin( min(pos_nw_0.z, pos_se_0.z) );
-	sint8 hmax( max(pos_nw_0.z, pos_se_0.z) );
+	koord pos_nw(min(pos_nw_0.x, pos_se_0.x), min(pos_nw_0.y, pos_se_0.y));
+	koord pos_se(max(pos_nw_0.x, pos_se_0.x), max(pos_nw_0.y, pos_se_0.y));
+	sint8 hmin(min(pos_nw_0.z, pos_se_0.z));
+	sint8 hmax(max(pos_nw_0.z, pos_se_0.z));
 
 	forbidden_t *test = new forbidden_t(player_nr, tool_id, wt, pos_nw, pos_se, hmin, hmax);
 	test->error = err;
@@ -420,10 +433,10 @@ void scenario_t::forbid_way_tool_cube(uint8 player_nr, uint16 tool_id, waytype_t
 
 void scenario_t::allow_way_tool_cube(uint8 player_nr, uint16 tool_id, waytype_t wt, koord3d pos_nw_0, koord3d pos_se_0)
 {
-	koord pos_nw( min(pos_nw_0.x, pos_se_0.x), min(pos_nw_0.y, pos_se_0.y));
-	koord pos_se( max(pos_nw_0.x, pos_se_0.x), max(pos_nw_0.y, pos_se_0.y));
-	sint8 hmin( min(pos_nw_0.z, pos_se_0.z) );
-	sint8 hmax( max(pos_nw_0.z, pos_se_0.z) );
+	koord pos_nw(min(pos_nw_0.x, pos_se_0.x), min(pos_nw_0.y, pos_se_0.y));
+	koord pos_se(max(pos_nw_0.x, pos_se_0.x), max(pos_nw_0.y, pos_se_0.y));
+	sint8 hmin(min(pos_nw_0.z, pos_se_0.z));
+	sint8 hmax(max(pos_nw_0.z, pos_se_0.z));
 
 	forbidden_t *test = new forbidden_t(player_nr, tool_id, wt, pos_nw, pos_se, hmin, hmax);
 	call_forbid_tool(test, false);
@@ -445,19 +458,19 @@ bool scenario_t::is_tool_allowed(const player_t* player, uint16 tool_id, sint16 
 	// first test the list
 	if (!forbidden_tools.empty()) {
 		forbidden_t test(forbidden_t::forbid_tool, PLAYER_UNOWNED, tool_id, invalid_wt);
-		uint8 player_nr = player  ?  player->get_player_nr() :  PLAYER_UNOWNED;
+		uint8 player_nr = player ? player->get_player_nr() : PLAYER_UNOWNED;
 
 		// first test waytype invalid_wt, then wt
 		// .. and all players then specific player
-		for(uint32 wti = 0; wti<4; wti++) {
+		for (uint32 wti = 0; wti<4; wti++) {
 			if (find_first(test) < forbidden_tools.get_count()) {
 				// there is something, hence forbidden
 				return false;
 			}
 			// logic to test all possible four cases
-			sim::swap<sint16>( wt, test.waytype );
+			sim::swap<sint16>(wt, test.waytype);
 			if (test.waytype == invalid_wt) {
-				sim::swap<uint8>( player_nr, test.player_nr );
+				sim::swap<uint8>(player_nr, test.player_nr);
 				if (test.player_nr == PLAYER_UNOWNED) {
 					break;
 				}
@@ -467,8 +480,8 @@ bool scenario_t::is_tool_allowed(const player_t* player, uint16 tool_id, sint16 
 	// then call script if available
 	if (what_scenario == SCRIPTED) {
 		bool ok = true;
-		const char* err = script->call_function("is_tool_allowed", ok, (uint8)(player  ?  player->get_player_nr() : PLAYER_UNOWNED), tool_id, wt);
-		return err != NULL  ||  ok;
+		const char* err = script->call_function(script_vm_t::FORCE, "is_tool_allowed", ok, (uint8)(player ? player->get_player_nr() : PLAYER_UNOWNED), tool_id, wt);
+		return err != NULL || ok;
 	}
 
 	return true;
@@ -483,12 +496,12 @@ const char* scenario_t::is_work_allowed_here(const player_t* player, uint16 tool
 	// first test the list
 	if (!forbidden_tools.empty()) {
 		forbidden_t test(forbidden_t::forbid_tool_rect, PLAYER_UNOWNED, tool_id, invalid_wt);
-		uint8 player_nr = player  ?  player->get_player_nr() :  PLAYER_UNOWNED;
+		uint8 player_nr = player ? player->get_player_nr() : PLAYER_UNOWNED;
 
 		// first test waytype invalid_wt, then wt
 		// .. and all players then specific player
-		for(uint32 wti = 0; wti<4; wti++) {
-			for(uint32 i = find_first(test); i < forbidden_tools.get_count()  &&  *forbidden_tools[i] <= test; i++) {
+		for (uint32 wti = 0; wti<4; wti++) {
+			for (uint32 i = find_first(test); i < forbidden_tools.get_count() && *forbidden_tools[i] <= test; i++) {
 				forbidden_t const& f = *forbidden_tools[i];
 				// check rectangle
 				if (f.pos_nw.x <= pos.x  &&  f.pos_nw.y <= pos.y  &&  pos.x <= f.pos_se.x  &&  pos.y <= f.pos_se.y) {
@@ -503,9 +516,9 @@ const char* scenario_t::is_work_allowed_here(const player_t* player, uint16 tool
 				}
 			}
 			// logic to test all possible four cases
-			sim::swap<sint16>( wt, test.waytype );
+			sim::swap<sint16>(wt, test.waytype);
 			if (test.waytype == invalid_wt) {
-				sim::swap<uint8>( player_nr, test.player_nr );
+				sim::swap<uint8>(player_nr, test.player_nr);
 				if (test.player_nr == PLAYER_UNOWNED) {
 					break;
 				}
@@ -518,7 +531,7 @@ const char* scenario_t::is_work_allowed_here(const player_t* player, uint16 tool
 	// which is done per client
 	if (what_scenario == SCRIPTED) {
 		static plainstring msg;
-		const char *err = script->call_function("is_work_allowed_here", msg, (uint8)(player ? player->get_player_nr() : PLAYER_UNOWNED), tool_id, pos);
+		const char *err = script->call_function(script_vm_t::FORCE, "is_work_allowed_here", msg, (uint8)(player ? player->get_player_nr() : PLAYER_UNOWNED), tool_id, pos);
 
 		return err == NULL ? msg.c_str() : NULL;
 	}
@@ -532,14 +545,14 @@ const char* scenario_t::is_schedule_allowed(const player_t* player, const schedu
 	if (schedule == NULL) {
 		return "";
 	}
-	if (schedule->empty()  ||  env_t::server) {
+	if (schedule->empty() || env_t::server) {
 		// empty schedule, networkgame: all allowed
 		return NULL;
 	}
 	// call script
 	if (what_scenario == SCRIPTED) {
 		static plainstring msg;
-		const char *err = script->call_function("is_schedule_allowed", msg, (uint8)(player ? player->get_player_nr() : PLAYER_UNOWNED), schedule);
+		const char *err = script->call_function(script_vm_t::FORCE, "is_schedule_allowed", msg, (uint8)(player ? player->get_player_nr() : PLAYER_UNOWNED), schedule);
 
 		return err == NULL ? msg.c_str() : NULL;
 	}
@@ -560,7 +573,7 @@ void scenario_t::step()
 {
 	if (!script) {
 		// update texts at clients if info window open
-		if (env_t::networkmode  &&  !env_t::server  &&  win_get_magic(magic_scenario_info)) {
+		if (env_t::networkmode && !env_t::server  &&  win_get_magic(magic_scenario_info)) {
 			update_scenario_texts();
 		}
 		return;
@@ -570,20 +583,28 @@ void scenario_t::step()
 	uint16 new_lost = 0;
 
 	// first check, whether win/loss state of any player changed
-	for(uint32 i=0; i<PLAYER_UNOWNED; i++) {
+	for (uint32 i = 0; i<PLAYER_UNOWNED; i++) {
 		player_t *player = welt->get_player(i);
 		uint16 mask = 1 << i;
 		// player exists and has not won/lost yet
-		if (player  &&  (((won | lost) & mask)==0)) {
+		if (player && (((won | lost) & mask) == 0)) {
 			sint32 percentage = 0;
-			script->call_function("is_scenario_completed", percentage, (uint8)(player ? player->get_player_nr() : PLAYER_UNOWNED));
+			// callback
+			script->prepare_callback("scenario_t_set_completed", 2, i, percentage);
+			// call script
+			const char *err = script->call_function(script_vm_t::QUEUE, "is_scenario_completed", percentage, i);
+			// clear callback
+			script->clear_pending_callback();
 
 			// script might have deleted the player
 			player = welt->get_player(i);
 			if (player == NULL) {
 				continue;
 			}
-
+			// call completed?
+			if (script_vm_t::is_call_suspended(err)) {
+				continue;
+			}
 			player->set_scenario_completion(percentage);
 			// won ?
 			if (percentage >= 100) {
@@ -598,17 +619,8 @@ void scenario_t::step()
 
 	update_won_lost(new_won, new_lost);
 
-	// server sends the new state to the clients
-	if (env_t::server  &&  (new_won | new_lost)) {
-		nwc_scenario_t *nwc = new nwc_scenario_t();
-		nwc->won = new_won;
-		nwc->lost = new_lost;
-		nwc->what = nwc_scenario_t::UPDATE_WON_LOST;
-		network_send_all(nwc, true);
-	}
-
 	// update texts
-	if (win_get_magic(magic_scenario_info) ) {
+	if (win_get_magic(magic_scenario_info)) {
 		update_scenario_texts();
 	}
 
@@ -623,20 +635,29 @@ void scenario_t::step()
 void scenario_t::new_month()
 {
 	if (script) {
-		script->call_function("new_month");
+		script->call_function(script_vm_t::QUEUE, "new_month");
 	}
 }
 
 void scenario_t::new_year()
 {
 	if (script) {
-		script->call_function("new_year");
+		script->call_function(script_vm_t::QUEUE, "new_year");
 	}
 }
 
 
 void scenario_t::update_won_lost(uint16 new_won, uint16 new_lost)
 {
+	// server sends the new state to the clients
+	if (env_t::server && (new_won | new_lost)) {
+		nwc_scenario_t *nwc = new nwc_scenario_t();
+		nwc->won = new_won;
+		nwc->lost = new_lost;
+		nwc->what = nwc_scenario_t::UPDATE_WON_LOST;
+		network_send_all(nwc, true);
+	}
+
 	// we are the champions
 	if (new_won) {
 		won |= new_won;
@@ -648,7 +669,7 @@ void scenario_t::update_won_lost(uint16 new_won, uint16 new_lost)
 	}
 
 	// notify active player
-	if ( (new_won|new_lost) & (1<<welt->get_active_player_nr()) ) {
+	if ((new_won | new_lost) & (1 << welt->get_active_player_nr())) {
 		// most likely result text has changed, force update
 		result_text.update(script, welt->get_active_player(), true);
 
@@ -665,6 +686,7 @@ void scenario_t::update_scenario_texts()
 	rule_text.update(script, player);
 	result_text.update(script, player);
 	about_text.update(script, player);
+	debug_text.update(script, player);
 	description_text.update(script, player);
 }
 
@@ -696,11 +718,11 @@ plainstring scenario_t::load_language_file(const char* filename)
 
 	plainstring text = "";
 	if (file) {
-		fseek(file,0,SEEK_END);
+		fseek(file, 0, SEEK_END);
 		long len = ftell(file);
-		if(len>0) {
+		if (len>0) {
 			char* const buf = MALLOCN(char, len + 1);
-			fseek(file,0,SEEK_SET);
+			fseek(file, 0, SEEK_SET);
 			fread(buf, 1, len, file);
 			buf[len] = '\0';
 			text = buf;
@@ -735,8 +757,8 @@ void scenario_t::rdwr(loadsave_t *file)
 		file->rdwr_long(city_nr);
 		sint64 factor = 0;
 		file->rdwr_longlong(factor);
-		koord k(0,0);
-		k.rdwr( file );
+		koord k(0, 0);
+		k.rdwr(file);
 	}
 
 	if (what_scenario != SCRIPTED  &&  what_scenario != SCRIPTED_NETWORK) {
@@ -746,7 +768,7 @@ void scenario_t::rdwr(loadsave_t *file)
 		return;
 	}
 
-	file->rdwr_byte(rotation);
+	script_api::coordinate_transform_t::rdwr(file);
 	file->rdwr_short(won);
 	file->rdwr_short(lost);
 	file->rdwr_str(scenario_name);
@@ -758,7 +780,7 @@ void scenario_t::rdwr(loadsave_t *file)
 			plainstring str;
 			file->rdwr_str(str);
 			dbg->warning("scenario_t::rdwr", "loaded persistent scenario data: %s", str.c_str());
-			if (env_t::networkmode   &&  !env_t::server) {
+			if (env_t::networkmode && !env_t::server) {
 				// client playing network scenario game:
 				// script files are not available
 				what_scenario = SCRIPTED_NETWORK;
@@ -767,12 +789,11 @@ void scenario_t::rdwr(loadsave_t *file)
 			else {
 				// load script
 				cbuffer_t script_filename;
-
 				// assume error
 				rdwr_error = true;
- 				// try addon directory first
+				// try addon directory first
 				if (env_t::default_settings.get_with_private_paks()) {
-					scenario_path = ( std::string("addons/") + env_t::objfilename + "scenario/" + scenario_name.c_str() + "/").c_str();
+					scenario_path = (std::string("addons/") + env_t::objfilename + "scenario/" + scenario_name.c_str() + "/").c_str();
 					script_filename.printf("%sscenario.nut", scenario_path.c_str());
 					rdwr_error = !load_script(script_filename);
 				}
@@ -786,6 +807,7 @@ void scenario_t::rdwr(loadsave_t *file)
 				}
 
 				if (!rdwr_error) {
+					load_compatibility_script();
 					// restore persistent data
 					const char* err = script->eval_string(str);
 					if (err) {
@@ -793,7 +815,9 @@ void scenario_t::rdwr(loadsave_t *file)
 						rdwr_error = true;
 					}
 					// load translations
-					translator::load_files_from_folder( scenario_path.c_str(), "scenario" );
+					translator::load_files_from_folder(scenario_path.c_str(), "scenario");
+					// callback
+					script->register_callback(&scenario_t::set_completion, "scenario_t_set_completed");
 				}
 				else {
 					dbg->warning("scenario_t::rdwr", "could not load script file %s", (const char*)script_filename);
@@ -802,7 +826,7 @@ void scenario_t::rdwr(loadsave_t *file)
 		}
 		else {
 			plainstring str;
-			script->call_function("save", str);
+			script->call_function(script_vm_t::FORCEX, "save", str);
 			dbg->warning("scenario_t::rdwr", "write persistent scenario data: %s", str.c_str());
 			file->rdwr_str(str);
 		}
@@ -815,7 +839,7 @@ void scenario_t::rdwr(loadsave_t *file)
 	uint32 count = forbidden_tools.get_count();
 	file->rdwr_long(count);
 
-	for(uint32 i=0; i<count; i++) {
+	for (uint32 i = 0; i<count; i++) {
 		if (file->is_loading()) {
 			forbidden_tools.append(new forbidden_t());
 		}
@@ -827,8 +851,8 @@ void scenario_t::rdwr(loadsave_t *file)
 		dynamic_string::rdwr_cache(file);
 	}
 
-	if (what_scenario == SCRIPTED  &&  file->is_loading()  &&  !rdwr_error) {
-		const char* err = script->call_function("resume_game");
+	if (what_scenario == SCRIPTED  &&  file->is_loading() && !rdwr_error) {
+		const char* err = script->call_function(script_vm_t::FORCEX, "resume_game");
 		if (err) {
 			dbg->warning("scenario_t::rdwr", "error [%s] calling resume_game", err);
 			rdwr_error = true;
@@ -838,40 +862,37 @@ void scenario_t::rdwr(loadsave_t *file)
 
 void scenario_t::rotate90(const sint16 y_size)
 {
-	rotation ++;
-	rotation %= 4;
-
-	for(uint32 i=0; i<forbidden_tools.get_count(); i++) {
+	for (uint32 i = 0; i<forbidden_tools.get_count(); i++) {
 		forbidden_tools[i]->rotate90(y_size);
 	}
 }
 
 
 // return percentage completed
-int scenario_t::get_completion(int player_nr)
+sint32 scenario_t::get_completion(int player_nr)
 {
-	if ( what_scenario == 0  ||  player_nr < 0  ||  player_nr >= PLAYER_UNOWNED) {
+	if (what_scenario == 0 || player_nr < 0 || player_nr >= PLAYER_UNOWNED) {
 		return 0;
 	}
 	// check if won / lost
 	uint32 pl = player_nr;
-	if (won & (1<<player_nr)) {
+	if (won & (1 << player_nr)) {
 		return 100;
 	}
-	else if (lost & (1<<player_nr)) {
+	else if (lost & (1 << player_nr)) {
 		return -1;
 	}
 
 	sint32 percentage = 0;
 	player_t *player = welt->get_player(player_nr);
 
-	if ( what_scenario == SCRIPTED ) {
+	if (what_scenario == SCRIPTED) {
 		// take cached value
 		if (player) {
 			percentage = player->get_scenario_completion();
 		}
 	}
-	else if ( what_scenario == SCRIPTED_NETWORK ) {
+	else if (what_scenario == SCRIPTED_NETWORK) {
 		cbuffer_t buf;
 		buf.printf("is_scenario_completed(%d)", pl);
 		const char *ret = dynamic_string::fetch_result((const char*)buf, NULL, NULL);
@@ -881,5 +902,28 @@ int scenario_t::get_completion(int player_nr)
 			player->set_scenario_completion(percentage);
 		}
 	}
-	return min( 100, percentage);
+	return min(100, percentage);
+}
+
+
+bool scenario_t::set_completion(sint32 player_nr, sint32 percentage)
+{
+	if (player_nr < 0 || player_nr >= PLAYER_UNOWNED) {
+		return false;
+	}
+	player_t *player = welt->get_player(player_nr);
+	if (player == NULL) {
+		return false;
+	}
+	player->set_scenario_completion(percentage - player->get_scenario_completion());
+
+	uint16 mask = 1 << player_nr;
+	// check won/lost
+	if (percentage < 0 && (lost & mask) == 0) {
+		update_won_lost(0, mask);
+	}
+	else if (percentage >= 100 && (won & mask) == 0) {
+		update_won_lost(mask, 0);
+	}
+	return true;
 }

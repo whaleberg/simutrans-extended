@@ -4,6 +4,48 @@
  *
  * @section api-trunk Current trunk
  *
+ * - Feature: scripted AI players
+ * - Feature: script calls can be suspended and waken up, less strict checks of 'script take too long'
+ * - Feature: add commands to modify game state, see @ref game_cmd
+ * - Added @ref climates, square_x::get_climate, world::get_size
+ * - Added new classes command_x, vehicle_desc_x, tunnel_desc_x, bridge_desc_x
+ * - Added tool_ids::tool_set_climate, tool_ids::tool_change_water_height
+ * - Added string::toalnum (converts strings to strings that can be used as table keys)
+ * - Changed gui::add_message to take additional player_x parameter
+ *
+ * @section api-120-1-2 Release 120.1.2
+ *
+ * - Added label_x::get_text, tile_x::get_text
+ * - Added factory_x::get_halt_list, halt_x::get_tile_list, halt_x::get_factory_list, square_x::get_halt_list
+ * - Added world.get_player
+ * - Removed player_x::is_active
+ *
+ * @section api-120-1 Release 120.1
+ *
+ * - Added depot_x, depot_x::get_convoy_list
+ * - Added line_x::get_waytype, tile_x::get_slope
+ * - Added factory_production_x::get_base_production, factory_production_x::get_base_consumption, factory_x::get_tile_list
+ * - Added coord::href, coord3d::href
+ * - Added label_x, tile_x::remove_object
+ * - Added ::get_debug_text, debug::get_forbidden_text
+ * - Added operators and conversion to string to ::coord and ::coord3d classes
+ * - Added ::coord_to_string, ::coord3d_to_string
+ * - Added settings::get_station_coverage, settings::get_passenger_factor
+ * - Added settings::get_factory_worker_radius, settings::get_factory_worker_minimum_towns, settings::get_factory_worker_maximum_towns
+ * - Added settings::avoid_overcrowding, settings::no_routing_over_overcrowding, settings::separate_halt_capacities
+ *
+ * @section api-120-0-1 Release 120.0.1
+ *
+ * - Added building_desc_x::get_building_list, building_desc_x::get_headquarter_level
+ * - Added factory_production_x::get_in_transit
+ *
+ * @section api-120-0 Release 120.0
+ *
+ * - Added line_x, line_list_x
+ * - Deprecated get_convoy_list()
+ * - Added world::get_convoy_list, halt_x::get_convoy_list
+ * - Added @ref scenario.api to manage backward compatibility of scripts with the changing api
+ * - Added ::include
  * - Changed return type of world::get_time to time_ticks_x
  * - Added building_x::is_same_building.
  * - Added attraction_list_x, world::get_attraction_list
@@ -43,7 +85,6 @@
  * - Added player_x::is_active, world::remove_player
  * - Added schedule_x, schedule_entry_x, ::is_schedule_allowed
  * - Added halt_x::is_connected
- *
  *
  * @section api-112-1 Releases 112.0 and 112.1
  *

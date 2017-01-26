@@ -1738,11 +1738,17 @@
     <ClCompile Include="besch\reader\building_reader.cc" />
     <ClCompile Include="player\finance.cc" />
     <ClCompile Include="script\api\api_city.cc" />
+    <ClCompile Include="script\api\api_command.cc" />
     <ClCompile Include="script\api\api_const.cc" />
-    <ClCompile Include="script\api\api_convoy.cc" />
+    <ClCompile Include="script\api\api_control.cc" />
+    <ClCompile Include="script\api\api_convoy.cc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="script\api\api_factory.cc" />
     <ClCompile Include="script\api\api_gui.cc" />
     <ClCompile Include="script\api\api_halt.cc" />
+    <ClCompile Include="script\api\api_include.cc" />
+    <ClCompile Include="script\api\api_line.cc" />
     <ClCompile Include="script\api\api_map_objects.cc" />
     <ClCompile Include="script\api\api_obj_desc.cc" />
     <ClCompile Include="script\api\api_obj_desc_base.cc" />
@@ -1751,6 +1757,7 @@
     <ClCompile Include="script\api\api_schedule.cc" />
     <ClCompile Include="script\api\api_settings.cc" />
     <ClCompile Include="script\api\api_simple.cc" />
+    <ClCompile Include="script\api\api_skeleton.cc" />
     <ClCompile Include="script\api\api_tiles.cc" />
     <ClCompile Include="script\api\api_world.cc" />
     <ClCompile Include="script\api\export_besch.cc" />
@@ -2105,6 +2112,7 @@
     <ClCompile Include="besch\reader\xref_reader.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="besch\obj_besch_std_name.h" />
     <ClInclude Include="dataobj\environment.h" />
     <ClInclude Include="dataobj\gameinfo.h" />
     <ClInclude Include="dataobj\height_map_loader.h" />
@@ -2175,9 +2183,12 @@
     <ClInclude Include="revision.h" />
     <ClInclude Include="script\api\api.h" />
     <ClInclude Include="script\api\api_base.h" />
+    <ClInclude Include="script\api\api_command.h" />
     <ClInclude Include="script\api\api_doc.h" />
     <ClInclude Include="script\api\api_obj_desc_base.h" />
     <ClInclude Include="script\api\api_simple.h" />
+    <ClInclude Include="script\api\api_skeleton.h" />
+    <ClInclude Include="script\api\changelog.h" />
     <ClInclude Include="script\api\export_besch.h" />
     <ClInclude Include="script\api\get_next.h" />
     <ClInclude Include="script\api_class.h" />
@@ -2191,6 +2202,7 @@
     <ClInclude Include="simobj.h" />
     <ClInclude Include="simtool-dialogs.h" />
     <ClInclude Include="simunits.h" />
+    <ClInclude Include="squirrel\sqconfig.h" />
     <ClInclude Include="squirrel\sqstdaux.h" />
     <ClInclude Include="squirrel\sqstdblob.h" />
     <ClInclude Include="squirrel\sqstdio.h" />
@@ -2378,7 +2390,6 @@
     <ClInclude Include="boden\wege\narrowgauge.h" />
     <ClInclude Include="utils\notification.h" />
     <ClInclude Include="besch\obj_besch.h" />
-    <ClInclude Include="besch\obj_desc_std_name.h" />
     <ClInclude Include="besch\writer\obj_node.h" />
     <ClInclude Include="besch\obj_node_info.h" />
     <ClInclude Include="besch\writer\obj_pak_exception.h" />

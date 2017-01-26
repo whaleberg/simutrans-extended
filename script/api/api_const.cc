@@ -5,6 +5,7 @@
 #include "../api_param.h"
 #include "../../simobj.h"
 #include "../../simmenu.h"
+#include "../../simunits.h"
 
 using namespace script_api;
 
@@ -88,6 +89,10 @@ void export_global_constants(HSQUIRRELVM vm)
 	enum_slot(vm, "tool_buy_house", TOOL_BUY_HOUSE | GENERAL_TOOL);
 	/// build city road with pavement
 	enum_slot(vm, "tool_build_cityroad", TOOL_BUILD_CITYROAD | GENERAL_TOOL);
+	/// alter water height
+	enum_slot(vm, "tool_change_water_height", TOOL_CHANGE_WATER_HEIGHT | GENERAL_TOOL);
+	/// change climate of tiles
+	enum_slot(vm, "tool_set_climate", TOOL_SET_CLIMATE | GENERAL_TOOL);
 
 	// simple tools
 	/// increase industry density
@@ -152,6 +157,8 @@ void export_global_constants(HSQUIRRELVM vm)
 	enum_slot(vm, "st_flat", type_flat);
 	/// elevated ways
 	enum_slot(vm, "st_elevated", type_elevated);
+	/// runway (for wt_air), equal to st_elevated
+	enum_slot(vm, "st_runway", type_runway);
 	/// tram tracks (here way type has to be wt_tram)
 	enum_slot(vm, "st_tram", type_tram);
 	end_enum();
@@ -223,15 +230,15 @@ void export_global_constants(HSQUIRRELVM vm)
 	/// city car - not player owned
 	enum_slot(vm, "mo_city_car", obj_t::road_user);
 	/// road vehicle
-	enum_slot(vm, "mo_car", obj_t::automobil);
+	enum_slot(vm, "mo_car", obj_t::road_vehicle);
 	/// rail vehicle
 	enum_slot(vm, "mo_train", obj_t::rail_vehicle);
 	/// monorail vehicle
-	enum_slot(vm, "mo_monorail", obj_t::monorailwaggon);
+	enum_slot(vm, "mo_monorail", obj_t::monorail_vehicle);
 	/// maglev vehicle
-	enum_slot(vm, "mo_maglev", obj_t::maglevwaggon);
+	enum_slot(vm, "mo_maglev", obj_t::maglev_vehicle);
 	/// narrowgauge vehicle
-	enum_slot(vm, "mo_narrowgauge", obj_t::narrowgaugewaggon);
+	enum_slot(vm, "mo_narrowgauge", obj_t::narrowgauge_vehicle);
 	/// ship
 	enum_slot(vm, "mo_ship", obj_t::water_vehicle);
 	/// airplane
@@ -239,6 +246,30 @@ void export_global_constants(HSQUIRRELVM vm)
 	/// moving object (sheep ...)
 	enum_slot(vm, "mo_moving_object", obj_t::movingobj);
 
+	end_enum();
+
+	/**
+	 * Internal units.
+	 */
+	begin_enum("units");
+	/// The length of one side of a tile in car units. @see vehicle_desc_x::get_length
+	enum_slot(vm, "CARUNITS_PER_TILE", (uint32)CARUNITS_PER_TILE);
+
+	end_enum();
+
+	/**
+	 * Climate zones. Their naming may differ from the graphical representation and
+	 * translation in some paksets.
+	 */
+	begin_enum("climates");
+	enum_slot(vm, "cl_water", water_climate);
+	enum_slot(vm, "cl_desert", desert_climate);
+	enum_slot(vm, "cl_tropic", tropic_climate);
+	enum_slot(vm, "cl_mediterran", mediterran_climate);
+	enum_slot(vm, "cl_temperate", temperate_climate);
+	enum_slot(vm, "cl_tundra", tundra_climate);
+	enum_slot(vm, "cl_rocky", rocky_climate);
+	enum_slot(vm, "cl_arctic", arctic_climate);
 	end_enum();
 
 }

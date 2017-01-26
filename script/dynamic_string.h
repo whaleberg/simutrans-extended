@@ -9,7 +9,6 @@ class script_vm_t;
 class player_t;
 class loadsave_t;
 
-
 /**
  * Class of strings to hold result of text-returning script functions.
  *
@@ -62,15 +61,16 @@ public:
 	static const char* fetch_result(const char* function, script_vm_t *script, dynamic_string *listener=NULL, bool force_update=false);
 
 	/**
-	 * Clear internal cache
+	 * Clear internal cache. Registers callback method.
 	 */
-	static void init();
+	static void init(script_vm_t *script);
 
 	/**
 	 * Cache result of script at server,
 	 * immediately update the listening dynamic_string.
+	 * @returns dummy value
 	 */
-	static void record_result(const char* function, plainstring& result);
+	static bool record_result(const char* function, plainstring result);
 
 	static void rdwr_cache(loadsave_t *file);
 
@@ -78,8 +78,9 @@ private:
 	/**
 	 * Calls a script
 	 * @param function is the full function call including integer parameters
+	 * @returns true if call was successfull
 	 */
-	static plainstring call_script(const char* function, script_vm_t* script);
+	static bool call_script(const char* function, script_vm_t* script, plainstring& result);
 };
 
 #endif

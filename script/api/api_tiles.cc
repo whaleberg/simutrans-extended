@@ -6,6 +6,7 @@
 #include "get_next.h"
 #include "../api_class.h"
 #include "../api_function.h"
+#include "../../simmenu.h"
 #include "../../simworld.h"
 
 using namespace script_api;
@@ -29,6 +30,12 @@ SQInteger get_object_index(HSQUIRRELVM vm)
 	return param<obj_t*>::push(vm, obj);
 }
 
+call_tool_work tile_remove_object(grund_t* gr, player_t* player, obj_t::typ type)
+{
+	cbuffer_t buf;
+	buf.printf("%d", (int)type);
+	return call_tool_work(TOOL_REMOVER | GENERAL_TOOL, (const char*)buf, 0, player, gr->get_pos());
+}
 
 // return way ribis, have to implement a wrapper, to correctly rotate ribi
 static SQInteger get_way_ribi(HSQUIRRELVM vm)
@@ -62,6 +69,20 @@ halthandle_t get_first_halt_on_square(planquadrat_t* plan)
 	return plan->get_halt(NULL);
 }
 
+vector_tpl<halthandle_t> const& square_get_halt_list(planquadrat_t *plan)
+{
+	static vector_tpl<halthandle_t> list;
+	list.clear();
+	if (plan) {
+		const nearby_halt_t* haltlist = plan->get_haltlist();
+		for(uint8 i=0, end = plan->get_haltlist_count(); i < end; i++) {
+			list.append(haltlist[i].halt);
+		}
+	}
+	return list;
+}
+
+
 void export_tiles(HSQUIRRELVM vm)
 {
 	/**
@@ -86,7 +107,7 @@ void export_tiles(HSQUIRRELVM vm)
 	 * @param y z-coordinate
 	 * @typemask (integer,integer,integer)
 	 */
-	// actually defined simutrans/script/scenario_base.nut
+	// actually defined simutrans/script/script_base.nut
 	// register_function(..., "constructor", ...);
 
 
@@ -95,8 +116,15 @@ void export_tiles(HSQUIRRELVM vm)
 	 * @return some instance or null if not found
 	 */
 	register_method(vm, &grund_t::suche_obj, "find_object");
-
-
+	/**
+	 * Remove object of given type from the tile.
+	 * @param pl player that pays for removal
+	 * @param type object type
+	 * @returns null upon success, an error message otherwise
+	 * @warning Does not work with all object types.
+	 * @ingroup game_cmd
+	 */
+	register_method(vm, &tile_remove_object, "remove_object", true);
 	/**
 	 * Access halt at this tile.
 	 * @returns halt_x instance or null/false if no halt is present
@@ -132,6 +160,18 @@ void export_tiles(HSQUIRRELVM vm)
 	 * @returns true if tile on ground (not bridge/elevated, not tunnel)
 	 */
 	register_method(vm, &grund_t::ist_karten_boden, "is_ground");
+
+	/**
+	 * Returns encoded slope of tile, zero means flat tile.
+	 * @returns slope
+	 */
+	register_method(vm, &grund_t::get_grund_hang, "get_slope");
+
+	/**
+	 * Returns text of a sign on this tile (station sign, city name, label).
+	 * @returns text
+	 */
+	register_method(vm, &grund_t::get_text, "get_text");
 
 	/**
 	 * Queries ways on the tile.
@@ -220,9 +260,8 @@ void export_tiles(HSQUIRRELVM vm)
 	 * @param y z-coordinate
 	 * @typemask (integer,integer)
 	 */
-	// actually defined simutrans/script/scenario_base.nut
+	// actually defined simutrans/script/script_base.nut
 	// register_function(..., "constructor", ...);
-
 	/**
 	 * Access some halt at this square.
 	 * @deprecated Use square_x::get_player_halt or tile_x::get_halt instead!
@@ -249,5 +288,17 @@ void export_tiles(HSQUIRRELVM vm)
 	 * @returns tile_x instance
 	 */
 	register_method(vm, &planquadrat_t::get_kartenboden, "get_ground_tile");
+
+	/**
+	 * Returns list of stations that cover this tile.
+	 * @typemask array<halt_x>
+	 */
+	register_method(vm, &square_get_halt_list, "get_halt_list", true);
+
+	/**
+	 * Returns climate of ground tile.
+	 */
+	register_method(vm, &planquadrat_t::get_climate, "get_climate");
+
 	end_class(vm);
 }

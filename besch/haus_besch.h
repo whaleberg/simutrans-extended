@@ -250,7 +250,7 @@ class building_desc_t : public obj_desc_timelined_t {
 
 public:
 
-	koord get_groesse(int layout = 0) const {
+	koord get_size(int layout = 0) const {
 		return (layout & 1) ? koord(size.y, size.x) : size;
 	}
 
@@ -291,6 +291,9 @@ public:
 	bool is_signalbox() const { return is_type(signalbox); }
 
 	bool is_connected_with_town() const;
+
+	/// @returns headquarter level (or -1 if building is not headquarter)
+	sint32 get_headquarter_level() const { return (is_headquarter() ? get_extra() : -1); }
 
 	/**
 	* the level is used in many places: for price, for capacity, ...

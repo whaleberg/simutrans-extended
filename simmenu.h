@@ -106,7 +106,7 @@ enum {
 	TOOL_TRAFFIC_LEVEL,
 	TOOL_CHANGE_CONVOI,
 	TOOL_CHANGE_LINE,
-	TOOL_BUILD_DEPOT_TOOL,
+	TOOL_CHANGE_DEPOT,
 	UNUSED_WKZ_PWDHASH_TOOL,
 	TOOL_CHANGE_PLAYER,
 	TOOL_CHANGE_TRAFFIC_LIGHT,
@@ -200,11 +200,15 @@ public:
 
 	sint16 ok_sound;
 
+	/// a script is waiting for a call-back
+	uint32 callback_id;
+
 	enum {
 		WFL_SHIFT  = 1, ///< shift-key was pressed when mouse-click happened
 		WFL_CTRL   = 2, ///< ctrl-key was pressed when mouse-click happened
 		WFL_LOCAL  = 4, ///< tool call was issued by local client
-		WFL_SCRIPT = 8  ///< tool call was issued by script (no password checks)
+		WFL_SCRIPT = 8,  ///< tool call was issued by script (no password checks)
+		WFL_NO_CHK = 16, ///< tool call needs no password or scenario checks
 	};
 	uint8 flags; // flags are set before init/work/move is called
 
@@ -212,6 +216,8 @@ public:
 	bool is_shift_pressed()   const { return flags & WFL_SHIFT; }
 	bool is_local_execution() const { return flags & WFL_LOCAL; }
 	bool is_scripted()        const { return flags & WFL_SCRIPT; }
+	bool no_check()           const { return flags & WFL_NO_CHK; }
+	bool can_use_gui()        const { return is_local_execution() && !is_scripted(); }
 
 	uint16 command_key;// key to toggle action for this function
 

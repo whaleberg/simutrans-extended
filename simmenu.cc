@@ -158,7 +158,7 @@ tool_t *create_simple_tool(int toolnr)
 		case TOOL_TRAFFIC_LEVEL:     tool = new tool_traffic_level_t(); break;
 		case TOOL_CHANGE_CONVOI:       tool = new tool_change_convoi_t(); break;
 		case TOOL_CHANGE_LINE:         tool = new tool_change_line_t(); break;
-		case TOOL_BUILD_DEPOT_TOOL:        tool = new tool_change_depot_t(); break;
+		case TOOL_CHANGE_DEPOT:        tool = new tool_change_depot_t(); break;
 		case UNUSED_WKZ_PWDHASH_TOOL: dbg->warning("create_simple_tool()","deprecated tool [%i] requested", toolnr); return NULL;
 		case TOOL_CHANGE_PLAYER:   tool = new tool_change_player_t(); break;
 		case TOOL_CHANGE_TRAFFIC_LIGHT:tool = new tool_change_traffic_light_t(); break;

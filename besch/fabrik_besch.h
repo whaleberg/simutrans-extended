@@ -149,7 +149,7 @@ public:
 	ware_desc_t const* get_ware() const { return get_child<ware_desc_t>(0); }
 	int get_capacity() const { return capacity; } //"capacity" (Babelfish)
 	int get_supplier_count() const { return supplier_count; } //"number" (Babelfish)
-	int get_verbrauch() const { return consumption; } //"consumption" (Babelfish)
+	int get_consumption() const { return consumption; } //"consumption" (Babelfish)
 	void calc_checksum(checksum_t *chk) const;
 };
 

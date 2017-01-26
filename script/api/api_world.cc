@@ -12,9 +12,6 @@
 
 using namespace script_api;
 
-#define STATIC
-
-
 
 mytime_ticks_t world_get_time(karte_t*)
 {
@@ -93,6 +90,24 @@ SQInteger world_get_attraction_list(HSQUIRRELVM vm)
 }
 
 
+SQInteger world_get_convoy_list(HSQUIRRELVM vm)
+{
+	push_instance(vm, "convoy_list_x");
+	set_slot<bool>(vm, "use_world", true);
+	return 1;
+}
+
+SQInteger world_get_size(HSQUIRRELVM vm)
+{
+	koord k = welt->get_size();
+	if (coordinate_transform_t::get_rotation() & 1) {
+		return push_instance(vm, "coord", k.y, k.x);
+	}
+	else {
+		return push_instance(vm, "coord", k.x, k.y);
+	}
+}
+
 void export_world(HSQUIRRELVM vm)
 {
 	/**
@@ -132,6 +147,11 @@ void export_world(HSQUIRRELVM vm)
 	 * @returns whether operation was successfull
 	 */
 	STATIC register_method(vm, &world_remove_player, "remove_player", true);
+	/**
+	 * Returns player number @p pl. If player does not exist, returns null.
+	 * @param pl player number
+	 */
+	STATIC register_method(vm, &karte_t::get_player, "get_player", true);
 
 	/**
 	 * @returns current in-game time.
@@ -203,13 +223,6 @@ void export_world(HSQUIRRELVM vm)
 	STATIC register_method_fv(vm, &get_world_stat, "get_transported_goods", freevariable2<bool,sint32>(true, karte_t::WORLD_TRANSPORTED_GOODS), true );
 
 	/**
-	 * Get monthly statistics of proportion of people with access to a private car.
-	 * @returns array, index [0] corresponds to current month
-	 * @see city_x::get_generated_mail city_x::get_transported_mail
-	 */
-	STATIC register_method_fv(vm, &get_world_stat, "get_car_ownership", freevariable2<bool,sint32>(true, karte_t::WORLD_CAR_OWNERSHIP), true );
-
-	/**
 	 * Get per year statistics of total number of citizens.
 	 * @returns array, index [0] corresponds to current year
 	 */
@@ -267,13 +280,6 @@ void export_world(HSQUIRRELVM vm)
 	 * @see city_x::get_generated_mail city_x::get_transported_mail
 	 */
 	STATIC register_method_fv(vm, &get_world_stat, "get_year_ratio_goods",       freevariable2<bool,sint32>(false, karte_t::WORLD_GOODS_RATIO), true );
-
-	/**
-	 * Get per year statistics of the proportion of people with access to a private car.
-	 * @returns array, index [0] corresponds to current year
-	 * @see city_x::get_generated_mail city_x::get_transported_mail
-	 */
-	STATIC register_method_fv(vm, &get_world_stat, "get_year_car_ownership",       freevariable2<bool,sint32>(false, karte_t::WORLD_CAR_OWNERSHIP), true );
 	/**
 	 * Get per year statistics of total number of transported goods.
 	 * @returns array, index [0] corresponds to current year
@@ -282,10 +288,27 @@ void export_world(HSQUIRRELVM vm)
 	STATIC register_method_fv(vm, &get_world_stat, "get_year_transported_goods", freevariable2<bool,sint32>(false, karte_t::WORLD_TRANSPORTED_GOODS), true );
 
 	/**
+	 * @returns true if timeline play is active
+	 */
+	STATIC register_method(vm, &karte_t::use_timeline, "use_timeline");
+
+	/**
 	 * Returns iterator through the list of attractions on the map.
 	 * @returns iterator class.
+	 * @typemask attraction_list_x()
 	 */
 	STATIC register_function(vm, world_get_attraction_list, "get_attraction_list", 1, ".");
+	/**
+	 * Returns list of convoys on the map.
+	 * @returns convoy list
+	 * @typemask convoy_list_x()
+	 */
+	STATIC register_function(vm, world_get_convoy_list, "get_convoy_list", 1, ".");
+	/**
+	 * Returns size of the map.
+	 * @typemask coord()
+	 */
+	STATIC register_function(vm, world_get_size, "get_size", 1, ".");
 
 	end_class(vm);
 

@@ -1,4 +1,5 @@
 #include "api_class.h"
+#include "api_function.h"
 
 
 /**
@@ -6,13 +7,16 @@
  */
 SQInteger script_api::create_class(HSQUIRRELVM vm, const char* classname, const char* baseclass)
 {
+	script_api::set_squirrel_type_class(classname);
 	sq_pushroottable(vm);
 	if (baseclass) {
 		sq_pushstring(vm, baseclass, -1);
 		if(!SQ_SUCCEEDED(sq_get(vm, -2))) {
-			sq_pop(vm, 1);
 			sq_raise_error(vm, "base class %s to derive %s from it not found", baseclass, classname);
-			return SQ_ERROR;
+			// sq error will not be reported most of the time, so report to dbg, too
+			dbg->error("script_api::create_class", "base class '%s' to derive %s from it not found", baseclass, classname);
+			// good luck with any script
+			baseclass = NULL;
 		}
 	}
 	sq_newclass(vm, baseclass!=NULL);
@@ -27,12 +31,19 @@ SQInteger script_api::create_class(HSQUIRRELVM vm, const char* classname, const 
 
 SQInteger script_api::begin_class(HSQUIRRELVM vm, const char* classname, const char* /* baseclasses - dummy */)
 {
-	return push_class(vm, classname);
+	script_api::set_squirrel_type_class(classname);
+	if(!SQ_SUCCEEDED(push_class(vm, classname))) {
+		// push a dummy class on the stack to prevent failed assertions down the road
+		sq_newclass(vm, false);
+		return SQ_ERROR;
+	}
+	return SQ_OK;
 }
 
 
 void script_api::end_class(HSQUIRRELVM vm)
 {
+	script_api::set_squirrel_type_class("");
 	sq_pop(vm,1);
 }
 
@@ -46,8 +57,7 @@ SQInteger script_api::push_class(HSQUIRRELVM vm, const char* classname)
 	sq_pushstring(vm, classname, -1);
 	if(!SQ_SUCCEEDED(sq_get(vm, -2))) {
 		sq_pop(vm, 1);
-		sq_raise_error(vm, "class %s not found", classname);
-		return SQ_ERROR;
+		return sq_raise_error(vm, "class %s not found", classname);
 	}
 	sq_remove(vm, -2); // remove root table
 	return SQ_OK;

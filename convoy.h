@@ -384,7 +384,7 @@ public:
 
 	//-----------------------------------------------------------------------------
 	
-	// vehicle_summary becomes invalid, when the vehicle list or any vehicle's vehicle_desc_t changes.
+	// vehicle_summary becomes invalid, when the vehicle list or any vehicle's vehikel_desc_t changes.
 	inline void invalidate_vehicle_summary()
 	{
 		is_valid &= ~(cd_vehicle_summary|cd_adverse_summary|cd_weight_summary|cd_starting_force|cd_continuous_power|cd_braking_force);
@@ -408,7 +408,7 @@ public:
 	//-----------------------------------------------------------------------------
 	
 	// adverse_summary becomes invalid, when vehicle_summary becomes invalid 
-	// or any vehicle's vehicle_desc_t or any vehicle's location/way changes.
+	// or any vehicle's vehikel_desc_t or any vehicle's location/way changes.
 	inline void invalidate_adverse_summary()
 	{
 		is_valid &= ~(cd_adverse_summary|cd_weight_summary|cd_braking_force);
@@ -432,7 +432,7 @@ public:
 	//-----------------------------------------------------------------------------
 	
 	// freight_summary becomes invalid, when vehicle_summary becomes invalid 
-	// or any vehicle's vehicle_desc_t.
+	// or any vehicle's vehikel_desc_t.
 	inline void invalidate_freight_summary()
 	{
 		is_valid &= ~(cd_freight_summary);
@@ -456,7 +456,7 @@ public:
 	//-----------------------------------------------------------------------------
 	
 	// starting_force becomes invalid, when vehicle_summary becomes invalid 
-	// or any vehicle's vehicle_desc_t.
+	// or any vehicle's vehikel_desc_t.
 	inline void invalidate_starting_force()
 	{
 		is_valid &= ~(cd_starting_force);
@@ -475,7 +475,7 @@ public:
 	//-----------------------------------------------------------------------------
 	
 	// brake_force becomes invalid, when vehicle_summary becomes invalid 
-	// or any vehicle's vehicle_desc_t.
+	// or any vehicle's vehikel_desc_t.
 	inline void invalidate_brake_force()
 	{
 		is_valid &= ~(cd_braking_force);
@@ -494,7 +494,7 @@ public:
 	//-----------------------------------------------------------------------------
 	
 	// continuous_power becomes invalid, when vehicle_summary becomes invalid 
-	// or any vehicle's vehicle_desc_t.
+	// or any vehicle's vehikel_desc_t.
 	inline void invalidate_continuous_power()
 	{
 		is_valid &= ~(cd_continuous_power);

@@ -1031,7 +1031,7 @@ public:
 	bool init( player_t * ) {
 		assert(  default_param  );
 		sint16 level = min( max( atoi(default_param), 0), 16);
-		welt->get_settings().set_verkehr_level(level);
+		welt->get_settings().set_traffic_level(level);
 		return false;
 	}
 	bool is_init_network_save() const OVERRIDE { return false; }
@@ -1053,7 +1053,7 @@ public:
 
 class tool_change_depot_t : public tool_t {
 public:
-	tool_change_depot_t() : tool_t(TOOL_BUILD_DEPOT_TOOL | SIMPLE_TOOL) {}
+	tool_change_depot_t() : tool_t(TOOL_CHANGE_DEPOT | SIMPLE_TOOL) {}
 	bool init(player_t*) OVERRIDE;
 	bool is_init_network_save() const OVERRIDE { return false; }
 };

@@ -984,6 +984,21 @@
     <ClCompile Include="gui\schedule_gui.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="script\api\api_command.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="script\api\api_control.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="script\api\api_include.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="script\api\api_line.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="script\api\api_skeleton.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui\components\action_listener.h">
@@ -1425,9 +1440,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="besch\obj_besch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="besch\obj_besch_std_name.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="besch\writer\obj_node.h">
@@ -2205,6 +2217,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gui\schedule_gui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="script\api\api_command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="script\api\api_skeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="script\api\changelog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="squirrel\sqconfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="besch\obj_besch_std_name.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,9 +1,16 @@
 #include "api_obj_desc_base.h"
 
+#include "../../bauer/brueckenbauer.h"
 #include "../../bauer/hausbauer.h"
+#include "../../bauer/tunnelbauer.h"
+#include "../../bauer/vehikelbauer.h"
 #include "../../bauer/warenbauer.h"
 #include "../../bauer/wegbauer.h"
+#include "../../besch/bruecke_besch.h"
+#include "../../besch/tunnel_besch.h"
+#include "../../besch/vehikel_besch.h"
 #include "../../besch/ware_besch.h"
+#include "../../besch/weg_besch.h"
 #include "../../obj/baum.h"
 #include "../../squirrel/sq_extensions.h"
 
@@ -14,10 +21,13 @@ static const way_desc_t *my_get_desc(const char *name)
 	return way_builder_t::get_desc(name);
 }
 
-implement_desc_param(tree_desc_t, "tree_desc_x", &baum_t::find_tree);
-implement_desc_param(building_desc_t, "building_desc_x", &hausbauer_t::get_desc);
-implement_desc_param(ware_desc_t, "good_desc_x", (const ware_desc_t* (*)(const char*))(&warenbauer_t::get_info) );
-implement_desc_param(way_desc_t, "way_desc_x", &my_get_desc);
+implement_besch_param(tree_desc_t, "tree_desc_x", &baum_t::find_tree);
+implement_besch_param(building_desc_t, "building_desc_x", &hausbauer_t::get_desc);
+//implement_besch_param(ware_desc_t, "good_desc_x", (const ware_desc_t* (*)(const char*))(&warenbauer_t::get_info) );
+implement_besch_param(way_desc_t, "way_desc_x", &my_get_desc);
+//implement_besch_param(vehikel_desc_t, "vehicle_desc_x", &vehicle_builder_t::get_info);
+implement_besch_param(tunnel_desc_t, "tunnel_desc_x", &tunnel_builder_t::get_desc);
+implement_besch_param(bridge_desc_t, "bridge_desc_x", &bridge_builder_t::get_desc);
 
 /**
  * Macro to get the implementation of get method based on unique tag.
@@ -37,7 +47,7 @@ implement_desc_param(way_desc_t, "way_desc_x", &my_get_desc);
 	}
 
 // use the macro to obtain the interface of some abstract classes
-implement_class_with_tag(obj_desc_std_name_t);
+implement_class_with_tag(obj_named_desc_t);
 implement_class_with_tag(obj_desc_timelined_t);
 implement_class_with_tag(obj_desc_transport_related_t);
 

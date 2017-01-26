@@ -151,7 +151,7 @@ unsigned depot_t::get_max_convoy_length(waytype_t wt)
 void depot_t::call_depot_tool( char tool, convoihandle_t cnv, const char *extra, uint16 livery_scheme_index)
 {
 	// call depot tool
-	tool_t *tool_tmp = create_tool( TOOL_BUILD_DEPOT_TOOL | SIMPLE_TOOL );
+	tool_t *tool_tmp = create_tool( TOOL_CHANGE_DEPOT | SIMPLE_TOOL );
 	cbuffer_t buf;
 	buf.printf( "%c,%s,%hu,%hu", tool, get_pos().get_str(), cnv.get_id(), livery_scheme_index );
 	if(  extra  ) {
@@ -696,18 +696,18 @@ void depot_t::rdwr_vehikel(slist_tpl<vehicle_t *> &list, loadsave_t *file)
 			const bool last = false;
 
 			switch( typ ) {
-				case old_automobil:
-				case automobil: v = new road_vehicle_t(file, first, last);    break;
+				case old_road_vehicle:
+				case road_vehicle: v = new road_vehicle_t(file, first, last);    break;
 				case old_waggon:
 				case rail_vehicle:    v = new rail_vehicle_t(file, first, last);       break;
 				case old_schiff:
 				case water_vehicle:    v = new water_vehicle_t(file, first, last);       break;
 				case old_aircraft:
 				case air_vehicle: v = new air_vehicle_t(file, first, last);  break;
-				case old_monorailwaggon:
-				case monorailwaggon: v = new monorail_rail_vehicle_t(file, first, last);  break;
-				case maglevwaggon:   v = new maglev_rail_vehicle_t(file, first, last);  break;
-				case narrowgaugewaggon: v = new narrowgauge_rail_vehicle_t(file, first, last);  break;
+				case old_monorail_vehicle:
+				case monorail_vehicle: v = new monorail_rail_vehicle_t(file, first, last);  break;
+				case maglev_vehicle:   v = new maglev_rail_vehicle_t(file, first, last);  break;
+				case narrowgauge_vehicle: v = new narrowgauge_rail_vehicle_t(file, first, last);  break;
 				default:
 					dbg->fatal("depot_t::vehikel_laden()","invalid vehicle type $%X", typ);
 			}

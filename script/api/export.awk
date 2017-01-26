@@ -100,6 +100,9 @@ function split_params(string)
 	}
 	within_class = data[1]
 	indent = "\t"
+	param_count = 0
+	delete params
+	delete ptypes
 }
 
 /end_.*class/ {
@@ -160,6 +163,7 @@ function split_params(string)
 		for (t in ptypes) {
 			if (!(t in params)) {
 				params[t]=""
+				param_count++
 			}
 		}
 	}
@@ -186,18 +190,15 @@ function split_params(string)
 			fname = fname returns " " method "("
 		}
 	}
-	for (param = 1; param <= 100; param++) {
-		if (!(param in params)) {
-			break
-		}
+	for (param = 1; param <= param_count; param++) {
 		if (mode != "sq") {
 			if (!(param in ptypes)) ptypes[param] = "any_x"
-			fname = fname ptypes[param] " "
+			fname = fname ptypes[param]
 		}
-
-		fname = fname params[param]
-		param_count--
-		if (param_count > 0) fname = fname ", "
+		if (params[param] != "") {
+			fname = fname " " params[param]
+		}
+		if (param < param_count) fname = fname ", "
 	}
 	fname = fname  ");"
 	print indent fname

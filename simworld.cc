@@ -1130,7 +1130,7 @@ void karte_t::distribute_cities( settings_t const * const sets, sint16 old_x, si
 					bool ok = false;
 					if(  gb  &&  gb->is_townhall()  ) {
 						koord k_check = stadt[i]->get_pos() + koord(-1,-1);
-						const koord size = gb->get_tile()->get_desc()->get_groesse(gb->get_tile()->get_layout());
+						const koord size = gb->get_tile()->get_desc()->get_size(gb->get_tile()->get_layout());
 						koord inc(1,0);
 						// scan all adjacent tiles, take the first that has a road
 						for(sint32 i=0; i<2*size.x+2*size.y+4  &&  !ok; i++) {
@@ -5634,7 +5634,7 @@ sint32 karte_t::get_tiles_of_gebaeude(gebaeude_t* const gb, vector_tpl<const pla
 {
 	const building_tile_desc_t* tile = gb->get_tile();
 	const building_desc_t *bdsc = tile->get_desc();
-	const koord size = bdsc->get_groesse(tile->get_layout());
+	const koord size = bdsc->get_size(tile->get_layout());
 	if(size == koord(1,1))
 	{
 		// A single tiled building - just add the single tile.
@@ -9580,6 +9580,37 @@ void karte_t::network_game_set_pause(bool pause_, uint32 syncsteps_)
 	else {
 		set_pause(pause_);
 	}
+}
+
+const char* karte_t::call_work(tool_t *tool, player_t *player, koord3d pos, bool &suspended)
+{
+	const char *err = NULL;
+	if (!env_t::networkmode || tool->is_work_network_save() || tool->is_work_here_network_save(player, pos)) {
+		// do the work
+		tool->flags |= tool_t::WFL_LOCAL;
+		// check allowance by scenario
+		if ((tool->flags & tool_t::WFL_NO_CHK) == 0 && get_scenario()->is_scripted()) {
+			if (!get_scenario()->is_tool_allowed(player, tool->get_id(), tool->get_waytype())) {
+				err = "";
+			}
+			else {
+				err = get_scenario()->is_work_allowed_here(player, tool->get_id(), tool->get_waytype(), pos);
+			}
+		}
+		if (err == NULL) {
+			err = tool->work(player, pos);
+		}
+		suspended = false;
+	}
+	else {
+		// queue tool for network
+		nwc_tool_t *nwc = new nwc_tool_t(player, tool, pos, get_steps(), get_map_counter(), false);
+		network_send_server(nwc);
+		suspended = true;
+		// reset tool
+		tool->init(player);
+	}
+	return err;
 }
 
 

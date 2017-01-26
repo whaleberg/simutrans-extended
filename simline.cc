@@ -100,14 +100,14 @@ simline_t::~simline_t()
 void simline_t::create_schedule()
 {
 	switch(type) {
-		case simline_t::truckline:       set_schedule(new autoschedule_t()); break;
-		case simline_t::trainline:       set_schedule(new zugschedule_t()); break;
-		case simline_t::shipline:        set_schedule(new schiffschedule_t()); break;
-		case simline_t::airline:         set_schedule(new airschedule_t()); break;
-		case simline_t::monorailline:    set_schedule(new monorailschedule_t()); break;
-		case simline_t::tramline:        set_schedule(new tramschedule_t()); break;
-		case simline_t::maglevline:      set_schedule(new maglevschedule_t()); break;
-		case simline_t::narrowgaugeline: set_schedule(new narrowgaugeschedule_t()); break;
+		case simline_t::truckline:       set_schedule(new truck_schedule_t()); break;
+		case simline_t::trainline:       set_schedule(new train_schedule_t()); break;
+		case simline_t::shipline:        set_schedule(new ship_schedule_t()); break;
+		case simline_t::airline:         set_schedule(new airplane_schedule_t()); break;
+		case simline_t::monorailline:    set_schedule(new monorail_schedule_t()); break;
+		case simline_t::tramline:        set_schedule(new tram_schedule_t()); break;
+		case simline_t::maglevline:      set_schedule(new maglev_schedule_t()); break;
+		case simline_t::narrowgaugeline: set_schedule(new narrowgauge_schedule_t()); break;
 		default:
 			dbg->fatal( "simline_t::create_schedule()", "Cannot create default schedule!" );
 	}
@@ -491,6 +491,20 @@ void simline_t::unregister_stops(schedule_t * schedule)
 	financial_history[0][LINE_DEPARTURES_SCHEDULED] = calc_departures_scheduled();
 }
 
+simline_t::linetype simline_t::get_linetype(const waytype_t wt)
+{
+	switch (wt) {
+	case road_wt: return simline_t::truckline;
+	case track_wt: return simline_t::trainline;
+	case water_wt: return simline_t::shipline;
+	case monorail_wt: return simline_t::monorailline;
+	case maglev_wt: return simline_t::maglevline;
+	case tram_wt: return simline_t::tramline;
+	case narrowgauge_wt: return simline_t::narrowgaugeline;
+	case air_wt: return simline_t::airline;
+	default: return simline_t::MAX_LINE_TYPE;
+	}
+}
 
 void simline_t::renew_stops()
 {

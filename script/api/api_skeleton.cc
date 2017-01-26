@@ -1,4 +1,4 @@
-/** @file api_skeleton.cc Documents the necessary functions to be implemented of a scenario script */
+/** @file api_skeleton.cc Documents the necessary functions to be implemented by a script */
 
 // It is in a C++ file to be processed by Doxygen filters to get function typemasks right
 
@@ -8,6 +8,19 @@
  * This function is called when the scenario starts. Do all the initializations here,
  * as you cannot initialize global variables with non-built-in squirrel types.
  * @typemask void()
+ * @ingroup scen_skel
+ */
+register_function("start");
+
+/**
+ * This function is called when the AI starts. Do all the initializations here,
+ * as you cannot initialize global variables with non-built-in squirrel types.
+ *
+ * @param pl_num the number of the AI player. Call <code>player_x(pl_num)</code> to obtain
+ * 		 a corresponding player_x instance. Definitely store this value!
+ *
+ * @typemask void(int)
+ * @ingroup ai_skel
  */
 register_function("start");
 
@@ -15,13 +28,36 @@ register_function("start");
  * This function is called when a savegame with active scenario is loaded.
  * Do all the initializations and post-processing here.
  * @typemask void()
+ * @ingroup scen_skel
+ * @ingroup quick_return_func
  */
 register_function("resume_game");
+
+/**
+ * This function is called when a savegame with active AI player is loaded.
+ * Do all the initializations and post-processing here.
+ *
+ * @param pl_num the number of the AI player. Call <code>player_x(pl_num)</code> to obtain
+ * 		 a corresponding player_x instance. Definitely store this value!
+ * @typemask void(int)
+ * @ingroup ai_skel
+ */
+register_function("resume_game");
+
+/**
+ * The heartbeat of the AI player. Here, all AI-related calculations and work can be done.
+ *
+ * @typemask void()
+ * @ingroup ai_skel
+ */
+register_function("step");
 
 /**
  * Called at the beginning of a new month.
  * Statistics of the last (complete) month is now in position [1] of any statistics array.
  * @typemask void()
+ * @ingroup scen_skel
+ * @ingroup ai_skel
  */
 register_function("new_month")
 
@@ -29,6 +65,8 @@ register_function("new_month")
  * Called at the beginning of a new year.
  * Statistics of the last (complete) year is now in position [1] of any statistics array.
  * @typemask void()
+ * @ingroup scen_skel
+ * @ingroup ai_skel
  */
 register_function("new_year")
 
@@ -39,6 +77,8 @@ register_function("new_year")
  * By default returns the string @ref map.file.
  * @returns filename or "<attach>"
  * @typemask string()
+ * @ingroup scen_skel
+ * @ingroup quick_return_func
  */
 register_function("get_map_file")
 
@@ -51,6 +91,7 @@ register_function("get_map_file")
  *
  * @param pl player number of active player
  * @typemask string(integer)
+ * @ingroup scen_skel
  */
 register_function("get_about_text");
 
@@ -75,6 +116,7 @@ register_function("get_about_text");
  *
  * @param pl player number of active player
  * @typemask string(integer)
+ * @ingroup scen_skel
  */
 register_function("get_rule_text");
 
@@ -85,6 +127,7 @@ register_function("get_rule_text");
  *
  * @param pl player number of active player
  * @typemask string(integer)
+ * @ingroup scen_skel
  */
 register_function("get_goal_text");
 
@@ -95,6 +138,7 @@ register_function("get_goal_text");
  *
  * @param pl player number of active player
  * @typemask string(integer)
+ * @ingroup scen_skel
  */
 register_function("get_info_text");
 
@@ -105,8 +149,34 @@ register_function("get_info_text");
  *
  * @param pl player number of active player
  * @typemask string(integer)
+ * @ingroup scen_skel
  */
 register_function("get_result_text");
+
+/**
+ * Text shown in the 'Debug' tab in the scenario info window.
+ *
+ * Html-like tags can be used, see @ref get_rule_text.
+ *
+ * @param pl player number of active player
+ * @typemask string(integer)
+ * @ingroup scen_skel
+ */
+register_function("get_debug_text");
+
+/**
+ * Returns string containing the version of the api
+ * that the scenario supports.
+ * By default returns the string @ref scenario.api.
+ *
+ * If it returns "*" then this indicates that the scenario works in the most current api version.
+ * Currently "112.3" and "120.1" are supported.
+ *
+ * @typemask string()
+ * @ingroup scen_skel
+ * @ingroup quick_return_func
+ */
+register_function("get_api_version");
 
 /**
  * Core function of a scenario: It returns the completion percentage for the
@@ -120,6 +190,7 @@ register_function("get_result_text");
  *
  * @param pl player number of active player
  * @typemask integer(integer)
+ * @ingroup scen_skel
  */
 register_function("is_scenario_completed");
 
@@ -136,6 +207,8 @@ register_function("is_scenario_completed");
  * @param wt waytype of tool
  * @returns true if tool is allowed.
  * @typemask bool(integer,integer,way_types)
+ * @ingroup scen_skel
+ * @ingroup quick_return_func
  */
 register_function("is_tool_allowed");
 
@@ -144,6 +217,14 @@ register_function("is_tool_allowed");
  *
  * This function is network-aware:
  * Error messages are sent back over network to clients.
+ *
+ * The error message can contain a coordinate, which is used to show a location on the map.
+ * In order to show the right place, use @ref coord_to_string. The must be enclosed in parentheses
+ * or prefixed with @ .
+ *	@code
+		return "You cannot do this. The guy living at (" + coord_to_string({x=47, y=11}) + ") does not like you!"
+	@endcode
+ *
  * @attention Does not work with waybuilding and all tools that need path-finding, use the functions provided in #rules in this case.
  *
  * @param pl player number
@@ -152,6 +233,8 @@ register_function("is_tool_allowed");
  *
  * @return null if allowed, an error message otherwise
  * @typemask string(integer,integer,coord3d)
+ * @ingroup scen_skel
+ * @ingroup quick_return_func
  */
 register_function("is_work_allowed_here");
 
@@ -165,6 +248,8 @@ register_function("is_work_allowed_here");
  *
  * @return null if allowed, an error message otherwise
  * @typemask string(integer,schedule_x)
+ * @ingroup scen_skel
+ * @ingroup quick_return_func
  */
 register_function("is_schedule_allowed");
 
