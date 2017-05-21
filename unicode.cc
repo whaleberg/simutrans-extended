@@ -41,6 +41,10 @@ sint32 utf8_get_prev_char(const utf8* text, sint32 pos)
 // language the visible gui elements are not immediately retranslated
 utf16 utf8_to_utf16(const utf8* text, size_t* len)
 {
+	if (!text)
+	{
+		return NULL;
+	}
 	if (is_1byte_seq(text[0])) {
 		// ASCII
 		*len += 1;
