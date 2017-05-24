@@ -1892,6 +1892,11 @@ void* path_explorer_threaded(void* args)
 void karte_t::stop_path_explorer()
 {
 #ifdef MULTI_THREAD_PATH_EXPLORER
+	if (path_explorer_step_progress == -1)
+	{
+		return;
+	}
+
 	int mutex_error = 0;
 	
 	while (path_explorer_step_progress == 0)
