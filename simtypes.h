@@ -188,10 +188,20 @@ static inline int min(const int a, const int b)
 {
 	return a < b ? a : b;
 }
+
+static inline sint64 min(const sint64 a, const sint64 b)
+{
+	return a < b ? a : b;
+}
 #endif
 
 #ifndef max
 static inline int max(const int a, const int b)
+{
+	return a > b ? a : b;
+}
+
+static inline sint64 max(const sint64 a, const sint64 b)
 {
 	return a > b ? a : b;
 }
