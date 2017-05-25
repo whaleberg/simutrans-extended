@@ -76,7 +76,7 @@ void gebaeude_t::init()
 	passengers_generated_visiting = 0;
 	passengers_succeeded_visiting = 0;
 	passenger_success_percent_last_year_visiting = 65535;
-	available_jobs_by_time = -9223372036854775808ll;
+	available_jobs_by_time = -9223372036854775807ll;
 }
 
 
@@ -1689,7 +1689,7 @@ sint32 gebaeude_t::check_remaining_available_jobs() const
 	/*if(!jobs_available())
 	{
 		// All the jobs are taken for the time being.
-		//return 0;
+		return 0;
 	}
 	else
 	{*/
