@@ -767,7 +767,7 @@ public:
 			if(power > 0)
 			{
 				uint32 axles = axle_load ? (weight / axle_load) / 1000 : 1; // Weight is in kg.
-				axles = max(axles, 1);
+				axles = max(axles, 1u);
 			
 				float32e8_t adjusted_standard_axle((uint32)axle_load, (uint32)standard_axle_load);
 				const float32e8_t adjusted_standard_axle_original = adjusted_standard_axle;

@@ -204,7 +204,7 @@ uint32 baum_t::create_forest(koord new_center, koord wh )
 			}
 
 			uint8 number_to_plant = 0;
-			uint8 const max_trees_here = min(welt->get_settings().get_max_no_of_trees_on_square(), (tree_probability - 38 + 1) / 2);
+			uint8 const max_trees_here = min((uint32)welt->get_settings().get_max_no_of_trees_on_square(), (tree_probability - 38u + 1u) / 2u);
 			for (uint8 c2 = 0 ; c2<max_trees_here; c2++) {
 				const uint32 rating = simrand(10, "uint32 baum_t::create_forest") + 38 + c2*2;
 				if (rating < tree_probability ) {

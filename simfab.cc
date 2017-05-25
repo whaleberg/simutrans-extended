@@ -403,8 +403,8 @@ void fabrik_t::update_scaled_pax_demand()
 		const uint32 visitor_demand = (uint32)((base_visitor_demand * (sint64)prodbase + (prod_adjust >> 1) ) / prod_adjust);
 
 		// then, scaling based on month length
-		scaled_pax_demand = max(welt->calc_adjusted_monthly_figure(worker_demand), 1);
-		const uint32 scaled_visitor_demand = max(welt->calc_adjusted_monthly_figure(visitor_demand), 1);
+		scaled_pax_demand = max(welt->calc_adjusted_monthly_figure(worker_demand), 1ll);
+		const uint32 scaled_visitor_demand = max(welt->calc_adjusted_monthly_figure(visitor_demand), 1u);
 
 		// pax demand for fixed period length
 		// Intentionally not the scaled value.
@@ -446,7 +446,7 @@ void fabrik_t::update_scaled_mail_demand()
 		const sint64 base_mail_demand =  mail_capacity == 65535 ? mail_level : mail_capacity;
 		const uint32 mail_demand = (uint32)((base_mail_demand * (sint64)prodbase + (prod_adjust >> 1) ) / prod_adjust);
 		// then, scaling based on month length
-		scaled_mail_demand = max(welt->calc_adjusted_monthly_figure(mail_demand), 1);
+		scaled_mail_demand = max(welt->calc_adjusted_monthly_figure(mail_demand), 1u);
 
 		// mail demand for fixed period length
 		// Intentionally not the scaled value.
@@ -2848,7 +2848,7 @@ void fabrik_t::finish_rd()
 	}
 
 	// set production, update all production related numbers
-	set_base_production( max(prodbase, prodbase_adjust) );
+	set_base_production( max((uint32)prodbase, prodbase_adjust) );
 
 	// now we have a valid storage limit
 	if (welt->get_settings().is_crossconnect_factories()) {
@@ -2891,7 +2891,7 @@ void fabrik_t::adjust_production_for_fields()
 		}
 	}
 	// set production, update all production related numbers
-	set_base_production( max(prodbase, prodbase_adjust) );
+	set_base_production( max((uint32)prodbase, prodbase_adjust) );
 }
 
 void fabrik_t::rotate90( const sint16 y_size )
@@ -3135,7 +3135,7 @@ void fabrik_t::calc_max_intransit_percentages()
 			index ++;
 			continue;
 		}
-		const uint32 time_to_consume = max(1, get_time_to_consume_stock(index)); 
+		const uint32 time_to_consume = max(1u, get_time_to_consume_stock(index)); 
 		const uint32 ratio = ((uint32)lead_time * 1000 / (uint32)time_to_consume);
 		const uint32 modified_max_intransit_percentage = (ratio * (uint32)base_max_intransit_percentage) / 1000;
 		max_intransit_percentages.put(catg, (uint16)modified_max_intransit_percentage);
@@ -3207,7 +3207,7 @@ uint32 fabrik_t::get_time_to_consume_stock(uint32 index)
 	const factory_supplier_desc_t* flb = desc->get_supplier(index);
 	const uint32 vb = flb ? flb->get_consumption() : 0;
 	const sint32 base_production = get_current_production();
-	const sint32 consumed_per_month = max(((base_production * vb) >> 8), 1);
+	const sint32 consumed_per_month = max(((base_production * vb) >> 8u), 1u);
 
 	const sint32 input_capacity = max((input[index].max >> fabrik_t::precision_bits), 1);
 

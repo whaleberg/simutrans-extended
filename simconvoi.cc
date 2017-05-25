@@ -401,7 +401,7 @@ void convoi_t::reserve_own_tiles()
 				{
 					if(!route.empty())
 					{
-						sch->reserve(self, ribi_type( route.at(max(1u,1)-1u), route.at(min(route.get_count()-1u,0+1u))));
+						sch->reserve(self, ribi_type( route.at(max(1u,1u)-1u), route.at(min(route.get_count()-1u,0+1u))));
 					}
 				}
 			}
@@ -628,7 +628,7 @@ DBG_MESSAGE("convoi_t::finish_rd()","next_stop_index=%d", next_stop_index );
 				last_route_index = 0;
 				dbg->warning("convoi_t::finish_rd()", "Convoy %i's route index is out of range: resetting to zero", self.get_id());
 			}
-			uint16 start_index = min(max(1, vehicle[vehicle_count - 1]->get_route_index() - 1), route.get_count() - 1); 
+			uint16 start_index = min(max(1u, vehicle[vehicle_count - 1u]->get_route_index() - 1u), route.get_count() - 1u); 
 
 			uint32 train_length = move_to(start_index) + 1;
 			const koord3d last_start = front()->get_pos();
@@ -1121,7 +1121,7 @@ convoi_t::route_infos_t& convoi_t::get_route_infos()
 
 		// calc route infos
 		route_infos.set_count(route_count);
-		uint32 i = min(max(0, current_route_index - 2), route_count - 1);
+		uint32 i = min(max(0u, (uint32)current_route_index - 2u), route_count - 1u);
 
 		koord3d current_tile = route.at(i);
 		convoi_t::route_info_t &start_info = route_infos.get_element(i);
@@ -1275,7 +1275,7 @@ sync_result convoi_t::sync_step(uint32 delta_t)
 				}
 				// now move the rest (so all vehicle are moving synchroniously)
 				for(unsigned i=1; i<vehicle_count; i++) {
-					vehicle[i]->do_drive(max(1,sp_hat)); 
+					vehicle[i]->do_drive(max(1u,sp_hat)); 
 				}
 				// maybe we have been stopped be something => avoid wide jumps
 				sp_soll = (sp_soll-sp_hat) & 0x0FFF;
@@ -3005,7 +3005,7 @@ bool convoi_t::can_go_alte_direction()
 	}
 
 	// going backwards? then recalculate all
-	ribi_t::ribi neue_direction_rwr = ribi_t::backward(front()->calc_direction(route.front().get_2d(), route.at(min(2, route.get_count() - 1)).get_2d()));
+	ribi_t::ribi neue_direction_rwr = ribi_t::backward(front()->calc_direction(route.front().get_2d(), route.at(min(2u, route.get_count() - 1u)).get_2d()));
 //	DBG_MESSAGE("convoi_t::go_alte_direction()","neu=%i,rwr_neu=%i,alt=%i",neue_direction_rwr,ribi_t::backward(neue_direction_rwr),alte_direction);
 	if(neue_direction_rwr&alte_direction) {
 		set_akt_speed(8);
@@ -3234,14 +3234,14 @@ void convoi_t::vorfahren()
 				}
 				else {
 					// limit train to front of tile
-					train_length += min( (train_length%CARUNITS_PER_TILE)-1, vehicle[vehicle_count-1]->get_desc()->get_length() );
+					train_length += min( (train_length%CARUNITS_PER_TILE)-1, (uint32)vehicle[vehicle_count-1]->get_desc()->get_length() );
 				}
 			}
 			else
 			{
 				train_length += 1;
 			}
-			train_length = max(1,train_length);
+			train_length = max(1u,train_length);
 
 			// now advance all convoi until it is completely on the track
 			front()->set_leading(false); // switches off signal checks ...

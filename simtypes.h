@@ -184,7 +184,12 @@ template<typename T> static inline int sgn(T x)
 }
 
 #ifndef min
-static inline int min(const int a, const int b)
+static inline uint32 min(const uint32 a, const uint32 b)
+{
+	return a < b ? a : b;
+}
+
+static inline sint32 min(const sint32 a, const sint32 b)
 {
 	return a < b ? a : b;
 }
@@ -196,7 +201,12 @@ static inline sint64 min(const sint64 a, const sint64 b)
 #endif
 
 #ifndef max
-static inline int max(const int a, const int b)
+static inline uint32 max(const uint32 a, const uint32 b)
+{
+	return a > b ? a : b;
+}
+
+static inline sint32 max(const sint32 a, const sint32 b)
 {
 	return a > b ? a : b;
 }

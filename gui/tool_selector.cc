@@ -74,9 +74,9 @@ DBG_DEBUG4("tool_selector_t::add_tool()","ww=%i, rows=%i",ww,rows);
 		tool_icon_height = min(tool_icon_height, env_t::toolbar_max_height);
 	}
 	dirty = true;
-	set_windowsize( scr_size( tool_icon_width*env_t::iconsize.w, min(tool_icon_height, ((tools.get_count()-1)/tool_icon_width)+1)*env_t::iconsize.h+D_TITLEBAR_HEIGHT ) );
+	set_windowsize( scr_size( tool_icon_width*env_t::iconsize.w, min((uint32)tool_icon_height, ((tools.get_count()-1u)/tool_icon_width)+1u)*env_t::iconsize.h+D_TITLEBAR_HEIGHT ) );
 	tool_icon_disp_start = 0;
-	tool_icon_disp_end = min( tool_icon_disp_start+tool_icon_width*tool_icon_height, tools.get_count() );
+	tool_icon_disp_end = min( (uint32)tool_icon_disp_start+tool_icon_width*tool_icon_height, tools.get_count() );
 	has_prev_next = ((uint32)tool_icon_width*tool_icon_height < tools.get_count());
 
 DBG_DEBUG4("tool_selector_t::add_tool()", "at position %i (width %i)", tools.get_count(), tool_icon_width);
@@ -166,9 +166,9 @@ bool tool_selector_t::infowin_event(const event_t *ev)
 		}
 
 		int xy = tool_icon_width*tool_icon_height;
-		tool_icon_disp_end = min(tool_icon_disp_start+xy, tools.get_count());
+		tool_icon_disp_end = min((uint32)tool_icon_disp_start+xy, tools.get_count());
 
-		set_windowsize( scr_size( tool_icon_width*env_t::iconsize.w, min(tool_icon_height, ((tools.get_count()-1)/tool_icon_width)+1)*env_t::iconsize.h+D_TITLEBAR_HEIGHT ) );
+		set_windowsize( scr_size( tool_icon_width*env_t::iconsize.w, min((uint32)tool_icon_height, ((tools.get_count()-1u)/tool_icon_width)+1u)*env_t::iconsize.h+D_TITLEBAR_HEIGHT ) );
 		dirty = true;
 	}
 	return false;

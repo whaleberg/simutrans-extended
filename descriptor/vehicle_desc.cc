@@ -206,7 +206,7 @@ uint32 vehicle_desc_t::get_effective_force_index(sint32 speed /* in m/s */ ) con
 		return 0;
 	}
 	//return speed <= force_threshold_playerseed ? geared_force : geared_power / speed;
-	return geared_force[min(speed, max_speed)];
+	return geared_force[min((uint32)speed, max_speed)];
 }
 
 /**
@@ -221,7 +221,7 @@ uint32 vehicle_desc_t::get_effective_power_index(sint32 speed /* in m/s */ ) con
 		return 0;
 	}
 	///return speed <= force_threshold_playerseed ? geared_force * speed : geared_power;
-	return geared_power[min(speed, max_speed)];
+	return geared_power[min((uint32)speed, max_speed)];
 }
 
 uint16 vehicle_desc_t::get_obsolete_year_month(const karte_t *welt) const

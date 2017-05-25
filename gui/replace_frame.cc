@@ -240,7 +240,7 @@ void replace_frame_t::layout(scr_size *gr)
 
 	set_min_windowsize(scr_size(min_total_width, min_total_height));
 	if(fgr.w<0 || (uint32)fgr.w<total_width) {
-		gui_frame_t::set_windowsize(scr_size(min_total_width, max(fgr.h,min_total_height) ));
+		gui_frame_t::set_windowsize(scr_size(min_total_width, max((uint32)fgr.h,min_total_height) ));
 	}
 	if(gr  &&  gr->w==0) {
 		gr->w = total_width;

@@ -1180,7 +1180,7 @@ void route_t::postprocess_water_route(karte_t *welt)
 			if(!move_to_end_of_station && platform_size > max_len)
 			{
 				// Do not go to the end, but stop part way along the platform.
-				sint32 truncate_from_route = min(((platform_size - max_len) + 1) >> 1, get_count() - 1);
+				sint32 truncate_from_route = min(((platform_size - max_len) + 1) >> 1, (sint32)get_count() - 1);
 				while(truncate_from_route-- > 0)
 				{
 					route.pop_back();

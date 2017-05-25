@@ -425,8 +425,8 @@ bool gui_theme_t::themes_init(const char *file_name)
 	gui_theme_t::gui_arrow_down_size = gui_theme_t::gui_arrow_up_size;
 
 	// since scrollbar must have a certain size
-	gui_theme_t::gui_scrollbar_size.w = max( gui_min_scrollbar_size.w, (uint32)contents.get_int("gui_scrollbar_width",  gui_theme_t::gui_scrollbar_size.w ) );
-	gui_theme_t::gui_scrollbar_size.h = max( gui_min_scrollbar_size.h, (uint32)contents.get_int("gui_scrollbar_height", gui_theme_t::gui_scrollbar_size.h ) );
+	gui_theme_t::gui_scrollbar_size.w = max( gui_min_scrollbar_size.w, contents.get_int("gui_scrollbar_width",  gui_theme_t::gui_scrollbar_size.w ) );
+	gui_theme_t::gui_scrollbar_size.h = max( gui_min_scrollbar_size.h, contents.get_int("gui_scrollbar_height", gui_theme_t::gui_scrollbar_size.h ) );
 
 	// in practice, posbutton min height beeter is LINESPACE
 	gui_theme_t::gui_pos_button_size.w = (uint32)contents.get_int("gui_posbutton_width",  gui_theme_t::gui_pos_button_size.w );

@@ -1656,7 +1656,7 @@ void reliefkarte_t::draw(scr_coord pos)
 					max_tourist_ziele = pax;
 				}
 				COLOR_VAL color = calc_severity_color_log(gb->get_adjusted_visitor_demand(), max_tourist_ziele);
-				int radius = max( (number_to_radius( pax*4 )*zoom_in)/zoom_out, 1 );
+				int radius = max( (number_to_radius( pax*4u )*zoom_in)/zoom_out, 1u );
 				display_filled_circle( gb_pos.x, gb_pos.y, radius, color );
 				display_circle( gb_pos.x, gb_pos.y, radius, COL_BLACK );
 			}

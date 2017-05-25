@@ -69,7 +69,7 @@ void gui_tab_panel_t::set_size(scr_size size)
 bool gui_tab_panel_t::action_triggered(gui_action_creator_t *comp, value_t)
 {
 	if(  comp == &right  ) {
-		offset_tab = min( offset_tab+1, tabs.get_count()-1 );
+		offset_tab = min( (uint32)offset_tab+1u, tabs.get_count()-1u );
 	}
 	else if(  comp == &left  ) {
 		offset_tab = max( offset_tab-1, 0 );

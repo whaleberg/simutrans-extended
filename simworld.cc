@@ -1044,7 +1044,7 @@ void karte_t::distribute_cities( settings_t const * const sets, sint16 old_x, si
 				}
 			}
 			// streets since when?
-			game_start = max( game_start, way_builder_t::get_earliest_way(road_wt)->get_intro_year_month() );
+			game_start = max(game_start, (uint32)way_builder_t::get_earliest_way(road_wt)->get_intro_year_month());
 
 			uint32 original_start_year = current_month;
 			uint32 original_industry_gorwth = settings.get_industry_increase_every();
@@ -1068,7 +1068,7 @@ void karte_t::distribute_cities( settings_t const * const sets, sint16 old_x, si
 				bool not_updated = false;
 				bool new_town = true;
 				while(  current_bev < citizens  ) {
-					growth = min( citizens-current_bev, growth*2 );
+					growth = min((sint32)citizens - current_bev, growth * 2);
 					current_bev = stadt[i]->get_einwohner();
 					stadt[i]->change_size( growth, new_town );
 					// Only "new" for the first change_size call
@@ -1524,7 +1524,7 @@ DBG_DEBUG("karte_t::init()","built timeline");
 		else {
 			consecutive_build_failures = 0;
 		}
-		ls.set_progress( 16 + settings.get_city_count() * 4 + min(fab_list.get_count(),settings.get_factory_count()) );
+		ls.set_progress( 16 + settings.get_city_count() * 4 + min(fab_list.get_count(), (uint32)settings.get_factory_count()));
 	}
 
 	settings.set_factory_count( fab_list.get_count() );
@@ -4695,7 +4695,7 @@ void karte_t::update_frame_sleep_time()
 				}
 				else {
 					// do not set time too short!
-					set_frame_time( 500/max(1,realFPS) );
+					set_frame_time( 500/max(1u, realFPS) );
 					next_step_time = last_ms;
 				}
 			}
@@ -4703,7 +4703,7 @@ void karte_t::update_frame_sleep_time()
 	}
 	else  { // here only with fyst forward ...
 		// try to get 10 fps or lower rate (if set)
-		uint32 frame_intervall = max( 100, 1000/env_t::fps );
+		uint32 frame_intervall = max( 100u, 1000u/env_t::fps );
 		if(get_frame_time()>frame_intervall) {
 			reduce_frame_time();
 		}
@@ -4832,7 +4832,7 @@ void karte_t::new_month()
 	if(actual_industry_density < target_industry_density)
 	{
 		// Only add one chain per month, and randomise (with a minimum of 8% distribution_weight to ensure that any industry deficiency is, on average, remedied in about a year).
-		const uint32 percentage = max((((target_industry_density - actual_industry_density) * 100) / target_industry_density), 8);
+		const uint32 percentage = max((((target_industry_density - actual_industry_density) * 100u) / target_industry_density), 8u);
 		const uint32 distribution_weight = simrand(100, "void karte_t::new_month()");
 		if(distribution_weight < percentage)
 		{
@@ -5242,7 +5242,7 @@ rands[9] = get_random_seed();
 		
 #ifdef MULTI_THREAD
 		// This cannot be started at the end of the step, as we will not know at that point whether we need to call this at all.
-		cities_to_process = min(cities_awaiting_private_car_route_check.get_count() - 1, parallel_operations);
+		cities_to_process = min(cities_awaiting_private_car_route_check.get_count() - 1u, (uint32)parallel_operations);
 		simthread_barrier_wait(&private_car_barrier); // One wait barrier to activate all the private car checker threads, the second to wait until they have all finished. This is the first.
 #else			
 		const uint32 cities_to_process = min(cities_awaiting_private_car_route_check.get_count() - 1, parallel_operations);
@@ -5272,7 +5272,7 @@ rands[10] = get_random_seed();
 	if(  season_change  ||  snowline_change  ) {
 		DBG_DEBUG4("karte_t::step", "pending_season_change");
 		// process
-		const uint32 end_count = min( cached_grid_size.x * cached_grid_size.y,  tile_counter + max( 16384, cached_grid_size.x * cached_grid_size.y / 16 ) );
+		const uint32 end_count = min( cached_grid_size.x * cached_grid_size.y,  (sint32)tile_counter + max( 16384, cached_grid_size.x * cached_grid_size.y / 16 ) );
 		while(  tile_counter < end_count  ) {
 			plan[tile_counter].check_season_snowline( season_change, snowline_change );
 			tile_counter++;
@@ -5982,10 +5982,10 @@ sint32 karte_t::generate_passengers_or_mail(const goods_desc_t * wtyp)
 	bool overcrowded_already_set;
 
 	const uint32 min_commuting_tolerance = settings.get_min_commuting_tolerance();
-	const uint32 range_commuting_tolerance = max(0, settings.get_range_commuting_tolerance() - min_commuting_tolerance);
+	const uint32 range_commuting_tolerance = max(0u, settings.get_range_commuting_tolerance() - min_commuting_tolerance);
 
 	const uint32 min_visiting_tolerance = settings.get_min_visiting_tolerance();
-	const uint32 range_visiting_tolerance = max(0, settings.get_range_visiting_tolerance() - min_visiting_tolerance);
+	const uint32 range_visiting_tolerance = max(0u, settings.get_range_visiting_tolerance() - min_visiting_tolerance);
 
 	const uint16 max_onward_trips = settings.get_max_onward_trips();
 	trip_type trip = (wtyp == goods_manager_t::passengers) ?
@@ -6140,7 +6140,7 @@ sint32 karte_t::generate_passengers_or_mail(const goods_desc_t * wtyp)
 		else
 		{
 			// Passengers. 
-			quasi_tolerance = max(quasi_tolerance / 2, min(tolerance, 300));
+			quasi_tolerance = max(quasi_tolerance / 2, min(tolerance, 300u));
 		}
 
 		uint32 car_minutes = UINT32_MAX_VALUE;
@@ -9932,7 +9932,7 @@ void karte_t::process_network_commands(sint32 *ms_difference)
 
 	// send data
 	ms = dr_time();
-	network_process_send_queues( next_step_time>ms ? min( next_step_time-ms, 5) : 0 );
+	network_process_send_queues( next_step_time>ms ? min( next_step_time-ms, 5u) : 0 );
 
 	// process enqueued network world commands
 	while(  !command_queue.empty()  &&  (next_command_step<=sync_steps/*  ||  step_mode&PAUSE_FLAG*/)  ) {

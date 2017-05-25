@@ -38,7 +38,7 @@ void strasse_t::set_gehweg(bool janein)
 	{
 		if(welt->get_settings().get_town_road_speed_limit())
 		{
-			set_max_speed(min(welt->get_settings().get_town_road_speed_limit(), get_desc()->get_topspeed()));
+			set_max_speed(min(welt->get_settings().get_town_road_speed_limit(), (uint32)get_desc()->get_topspeed()));
 		}
 		else
 		{

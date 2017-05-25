@@ -1057,7 +1057,7 @@ void loadsave_t::rdwr_str(const char *&s)
 	if(!is_xml()) {
 		sint16 size;
 		if(saving) {
-			size = s ? (sint16)min(32767,strlen(s)) : 0;
+			size = s ? (sint16)min(32767u,strlen(s)) : 0;
 #ifdef SIM_BIG_ENDIAN
 			{
 				uint16 ii = endian(size);
@@ -1120,7 +1120,7 @@ void loadsave_t::rdwr_str( char* result_buffer, size_t const size)
 	if(!is_xml()) {
 		uint16 len;
 		if(saving) {
-			len = (uint16)min(32767,strlen(result_buffer));
+			len = (uint16)min(32767u,strlen(result_buffer));
 #ifdef SIM_BIG_ENDIAN
 			{
 				sint16 ii = endian(len);

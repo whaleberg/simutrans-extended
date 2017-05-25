@@ -93,7 +93,7 @@ void haltestelle_t::step_all()
 	const uint32 count = alle_haltestellen.get_count();
 	if (count)
 	{
-		const uint32 loops = min(count, 256);
+		const uint32 loops = min(count, 256u);
 		static vector_tpl<halthandle_t>::iterator iter;
 		for (uint32 i = 0; i < loops; ++i) 
 		{
@@ -1862,12 +1862,12 @@ uint32 haltestelle_t::calc_service_frequency(halthandle_t destination, uint8 cat
 			timing = max(spacing_time, timing);
 		}
 
-		timing = max(1, timing);
+		timing = max(1u, timing);
 
 		if (service_frequency == 0)
 		{
 			// This is the only time that this has been set so far, so compute for single line timing.
-			service_frequency = max(1, timing);
+			service_frequency = max(1u, timing);
 		}
 		else
 		{
@@ -3727,7 +3727,7 @@ void haltestelle_t::rdwr(loadsave_t *file)
 				if(file->get_version() <= 112002 || file->get_extended_version() <= 10)
 				{
 					const uint32 count = warray->get_count();
-					uint16 short_count = min(count, 65535);
+					uint16 short_count = min(count, 65535u);
 					file->rdwr_short(short_count);
 					has_uint16_count = true;
 				}
@@ -4125,7 +4125,7 @@ void haltestelle_t::rdwr(loadsave_t *file)
 		}
 		else
 		{
-			uint16 old_tt = min(transfer_time, 65535);
+			uint16 old_tt = min(transfer_time, 65535u);
 			file->rdwr_short(old_tt);
 			if (old_tt == 65535)
 			{

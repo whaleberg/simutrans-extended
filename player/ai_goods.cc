@@ -924,7 +924,7 @@ DBG_MESSAGE("do_ki()","check railway");
 							best_rail_speed = rail_weg->get_topspeed();
 						}
 						// no train can have more than 15 cars
-						count_rail = min( 22, (3*prod*dist) / (rail_vehicle->get_capacity()*best_rail_speed*2) );
+						count_rail = min( 22u, (3u*prod*dist) / (rail_vehicle->get_capacity()*best_rail_speed*2u) );
 						// if engine too week, reduce number of cars
 						if(  count_rail*80*64>(int)(rail_engine->get_power()*rail_engine->get_gear())  ) {
 							count_rail = rail_engine->get_power()*rail_engine->get_gear()/(80*64);
@@ -955,7 +955,7 @@ DBG_MESSAGE("do_ki()","check railway");
 						best_road_speed = road_weg->get_topspeed();
 					}
 					// minimum vehicle is 1, maximum vehicle is 48, more just result in congestion
-					count_road = min( 254, (prod*dist) / (road_vehicle->get_capacity()*best_road_speed*2)+2 );
+					count_road = min( 254u, (prod*dist) / (road_vehicle->get_capacity()*best_road_speed*2u)+2u );
 DBG_MESSAGE("ai_goods_t::do_ki()","guess to need %d road cars %s for route %s", count_road, road_vehicle->get_name(), road_weg->get_name() );
 				}
 				else {

@@ -5362,7 +5362,7 @@ int private_car_destination_finder_t::get_cost(const grund_t* gr, sint32 max_spe
 	last_city = city;
 	last_tile_speed = max_tile_speed;
 
-	uint32 speed = min(max_speed, max_tile_speed);
+	uint32 speed = min((uint32)max_speed, max_tile_speed);
 #ifndef FORBID_CONGESTION_EFFECTS
 	if(city)
 	{
@@ -5376,7 +5376,7 @@ int private_car_destination_finder_t::get_cost(const grund_t* gr, sint32 max_spe
 
 		const uint32 congestion = (uint32)city->get_congestion() + 100;
 		speed = (speed * 100) / congestion;
-		speed = max(4, speed);
+		speed = max(4u, speed);
 	}
 #endif
 	// Time = distance / speed

@@ -623,7 +623,7 @@ bool gui_hidden_textinput_t::infowin_event(const event_t *ev)
 		sint16 asterix_width = display_calc_proportional_string_len_width("*",1);
 		head_cursor_pos = 0;
 		if (  text  ) {
-			head_cursor_pos = min( strlen(text), ev->cx/asterix_width );
+			head_cursor_pos = min( (sint32)strlen(text), ev->cx/asterix_width );
 		}
 		cursor_reference_time = dr_time();	// update reference time for cursor blinking
 		return true;

@@ -2215,7 +2215,7 @@ sint64 way_builder_t::calc_costs()
 		}
 		else
 		{
-			costs += max(replace_cost, single_cost);
+			costs += max(replace_cost, (sint64)single_cost);
 		}
 
 		// last tile cannot be start of tunnel/bridge

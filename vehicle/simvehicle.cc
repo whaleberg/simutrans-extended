@@ -1620,11 +1620,11 @@ sint32 vehicle_t::calc_speed_limit(const weg_t *w, const weg_t *weg_previous, fi
 		const sint16 direction = get_direction_degrees(ribi_t::get_dir(current_direction));
 		uint16 tmp;
 
-		int counter = 0;
-		int steps_to_second_45 = 0;
-		int steps_to_90 = 0;
-		int steps_to_135 = 0;
-		int steps_to_180 = 0;
+		sint32 counter = 0;
+		sint32 steps_to_second_45 = 0;
+		sint32 steps_to_90 = 0;
+		sint32 steps_to_135 = 0;
+		sint32 steps_to_180 = 0;
 		const uint16 meters_per_tile = welt->get_settings().get_meters_per_tile();
 		int direction_changes = 0;
 		sint16 previous_direction = direction;
@@ -1663,7 +1663,7 @@ sint32 vehicle_t::calc_speed_limit(const weg_t *w, const weg_t *weg_previous, fi
 		}
 
 		// Calculate the radius on the basis of the most severe curve detected.
-		int radius = 0;
+		sint32 radius = 0;
 		sint32 corner_limit_kmh = SINT32_MAX_VALUE;
 		
 		// This is the maximum lateral force, denominated in fractions of G. 
@@ -1688,7 +1688,7 @@ sint32 vehicle_t::calc_speed_limit(const weg_t *w, const weg_t *weg_previous, fi
 			// This was formerly halved, but then multiplied by 2 again, which was redundant, so remove both instead.
 
 			radius = (steps_to_135 * meters_per_tile) / 3;
-			corner_limit_kmh = min(corner_limit_kmh, sqrt_i32((87 * radius) / corner_force_divider)); 
+			corner_limit_kmh = min(corner_limit_kmh, (sint32)sqrt_i32((87 * radius) / corner_force_divider)); 
 		}
 		
 		if(steps_to_90)
@@ -1697,7 +1697,7 @@ sint32 vehicle_t::calc_speed_limit(const weg_t *w, const weg_t *weg_previous, fi
 			// The steps_to_x values are the *manhattan* distance, which is exactly twice the actual radius. Thus, halve this here.
 			radius = (steps_to_90 * meters_per_tile) / 2;
 
-			corner_limit_kmh = min(corner_limit_kmh, sqrt_i32((87 * radius) / corner_force_divider)); 
+			corner_limit_kmh = min(corner_limit_kmh, (sint32)sqrt_i32((87 * radius) / corner_force_divider)); 
 		}
 		
 		if(steps_to_second_45 && !steps_to_90)
@@ -1712,9 +1712,9 @@ sint32 vehicle_t::calc_speed_limit(const weg_t *w, const weg_t *weg_previous, fi
 				// A pair of self-correcting 45 degree corners can be made in a minimum of 4 tiles and will have a minimum radius of twice the meters per tile value
 				// However, this is too harsh for most uses, so set the assumed radius as the minimum here. 
 				// There is no need to divide steos_to_second_45 by 2 only to multiply it by 2 again.
-				radius = max(assumed_radius, (steps_to_second_45 * meters_per_tile));
+				radius = max(assumed_radius, (uint32)(steps_to_second_45 * meters_per_tile));
 
-				corner_limit_kmh = min(corner_limit_kmh, sqrt_i32((87 * radius) / corner_force_divider)); 
+				corner_limit_kmh = min(corner_limit_kmh, (sint32)sqrt_i32((87 * radius) / corner_force_divider)); 
 			}
 		}
 
@@ -3697,7 +3697,7 @@ sint32 rail_vehicle_t::activate_choose_signal(const uint16 start_block, uint16 &
 		if(way->has_signal())
 		{
 			signal_t *sig = gr->find<signal_t>(1);
- 			ribi_t::ribi ribi = ribi_type(route->at(max(1u, modified_route_index) - 1u));	
+ 			ribi_t::ribi ribi = ribi_type(route->at(max(1, modified_route_index) - 1u));	
 			if(!gr->get_weg(get_waytype())->get_ribi_maske() & ribi) // Check that the signal is facing in the right direction.
 			{
 				if(sig && sig->get_desc()->is_choose_sign())
@@ -3811,7 +3811,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		return false;
 	}
 
-	ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u, route_index) - 1u), cnv->get_route()->at(min(cnv->get_route()->get_count() - 1u, route_index + 1u)));
+	ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1, route_index) - 1u), cnv->get_route()->at(min(cnv->get_route()->get_count() - 1u, route_index + 1u)));
 
 	if(working_method == one_train_staff && cnv->get_state() != convoi_t::LEAVING_DEPOT)
 	{
@@ -3870,7 +3870,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 				break;
 			}
 			uint16 modified_route_index = min(route_index + i, route_count - 1u);
-			ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u, modified_route_index) - 1u), cnv->get_route()->at(min(cnv->get_route()->get_count() - 1u, modified_route_index + 1u)));
+			ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1, modified_route_index) - 1u), cnv->get_route()->at(min(cnv->get_route()->get_count() - 1u, modified_route_index + 1u)));
 			signal_current = way->get_signal(ribi);
 			if (signal_current)
 			{
@@ -3984,10 +3984,10 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	uint16 modified_sighting_distance_tiles = sighting_distance_tiles;
 	
 	sint32 last_index = max (0, route_index - 1);
-	for(uint32 i = route_index; i <= min(route_index + sighting_distance_tiles, route.get_count() - 1); i++)
+	for(uint32 i = route_index; i <= min((uint32)(route_index + sighting_distance_tiles), route.get_count() - 1); i++)
 	{
 		koord3d i_pos = route.at(i);
-		ribi_t::ribi old_dir = calc_direction(route.at(route_index).get_2d(), route.at(min(route.get_count() - 1, route_index + 1)).get_2d());
+		ribi_t::ribi old_dir = calc_direction(route.at(route_index).get_2d(), route.at(min(route.get_count() - 1u, route_index + 1u)).get_2d());
 		ribi_t::ribi new_dir = calc_direction(route.at(last_index).get_2d(), i_pos.get_2d());
 
 		const grund_t* gr_new = welt->lookup(i_pos);
@@ -4022,7 +4022,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 			
 		if(corner || different_hill || overbridge) 
 		{
-			modified_sighting_distance_tiles = max(i - route_index, 1);
+			modified_sighting_distance_tiles = max(i - route_index, 1u);
 			break;
 		}
 		last_index = i;
@@ -4115,8 +4115,8 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		// Check for signals at restrictive aspects within the sighting distance to see whether they can now clear whereas they could not before.
 		for(uint16 tiles_to_check = 1; tiles_to_check <= modified_sighting_distance_tiles; tiles_to_check++)
 		{
-			const koord3d tile_to_check_ahead = cnv->get_route()->at(min(route.get_count() - 1u, route_index + tiles_to_check));
-			const koord3d previous_tile = cnv->get_route()->at(min(route.get_count() - 1u, route_index + tiles_to_check) -1u);
+			const koord3d tile_to_check_ahead = cnv->get_route()->at(min(route.get_count() - 1u, (uint32)route_index + (uint32)tiles_to_check));
+			const koord3d previous_tile = cnv->get_route()->at(min(route.get_count() - 1u, (uint32)route_index + (uint32)tiles_to_check) -1u);
 			grund_t *gr_ahead = welt->lookup(tile_to_check_ahead);
 			weg_t *way = gr_ahead ? gr_ahead->get_weg(get_waytype()) : NULL;
 			if(!way)
@@ -4125,8 +4125,8 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 				cnv->suche_neue_route();
 				return false;
 			}
-			uint16 modified_route_index = min(route_index + tiles_to_check, cnv->get_route()->get_count() - 1u);
-			ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u,modified_route_index)-1u), cnv->get_route()->at(min(cnv->get_route()->get_count()-1u,modified_route_index+1u)));
+			uint16 modified_route_index = min((uint32)(route_index + tiles_to_check), cnv->get_route()->get_count() - 1u);
+			ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u, (uint32)modified_route_index) - 1u), cnv->get_route()->at(min(cnv->get_route()->get_count() - 1u, (uint32)modified_route_index + 1u)));
 			signal_t* signal = way->get_signal(ribi); 
 
 			// There might be a station signal here, which might be operative despite facing in the opposite direction.
@@ -4184,7 +4184,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	{	
 		// With cab signalling, even if we need do nothing else at this juncture, we may need to change the working method.
 		const uint16 check_route_index = next_block <= 0 ? 0 : next_block - 1u;
-		ribi_t::ribi ribi = next_block < INVALID_INDEX ? ribi_type(cnv->get_route()->at(max(1u, check_route_index) - 1u), cnv->get_route()->at(min(max_element, check_route_index + 1u))) : ribi_t::all; 
+		ribi_t::ribi ribi = next_block < INVALID_INDEX ? ribi_type(cnv->get_route()->at(max(1u, (uint32)check_route_index) - 1u), cnv->get_route()->at(min((uint32)max_element, (uint32)check_route_index + 1u))) : ribi_t::all; 
 		signal_t* signal = w_current->get_signal(ribi); 
 
 		if (signal && working_method && one_train_staff && starting_from_stand)
@@ -4231,7 +4231,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		if(sch1->has_signal()) 
 		{
 			const uint16 check_route_index = next_block <= 0 ? 0 : next_block - 1u;
-			ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u, (min(max_element, check_route_index))) - 1u), cnv->get_route()->at(min(max_element, check_route_index + 1u)));
+			ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u, (min((uint32)max_element, (uint32)check_route_index))) - 1u), cnv->get_route()->at(min((uint32)max_element, (uint32)check_route_index + 1u)));
 			signal_t* signal = sch1->get_signal(ribi); 
 	
 			if(signal && ((signal->get_desc()->get_working_method() == cab_signalling) || (check_tile - route_index <= sighting_distance_tiles)))
@@ -4312,7 +4312,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	// properly on the token block signal at the exit of the loop.
 	if(welt->lookup(get_pos())->get_weg(get_waytype())->has_signal()) 
 	{
-		ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u,route_index)-1u), cnv->get_route()->at(min(cnv->get_route()->get_count()-1u,route_index+1u)));
+		ribi_t::ribi ribi = ribi_type(cnv->get_route()->at(max(1u, (uint32)route_index) - 1u), cnv->get_route()->at(min(cnv->get_route()->get_count() - 1u, route_index+1u)));
 		signal_t* signal = get_weg()->get_signal(ribi); 
 	
 		if(signal && signal->get_desc()->get_working_method() == token_block)
@@ -4360,12 +4360,12 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 	if(start_index >= route->get_count())
 	{
 		// Cannot start reserving beyond the end of the route.
-		cnv->set_next_reservation_index(max(route->get_count(), 1) - 1);
+		cnv->set_next_reservation_index(max(route->get_count(), 1u) - 1u);
 		return 0;
 	}
 
 	bool starting_at_signal = false;
-	if(route->at(start_index) == get_pos() && reserve && start_index < route->get_count() - 1)
+	if(route->at(start_index) == get_pos() && reserve && start_index < route->get_count() - 1u)
 	{
 		starting_at_signal = true;
 	}
@@ -4974,7 +4974,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 									else if(signal->get_state() == roadsign_t::caution || signal->get_state() == roadsign_t::caution_no_choose)
 									{
 										// Half line speed allowed for caution indications on time interval stop signals on straight track
-										cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, signal->get_desc()->get_max_speed() / 2));
+										cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, (sint32)signal->get_desc()->get_max_speed() / 2));
 									}
 									else if(signal->get_state() == roadsign_t::clear || signal->get_state() == roadsign_t::clear_no_choose)
 									{
@@ -4993,7 +4993,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 										}
 										else if(next_time_interval_state == roadsign_t::caution || next_time_interval_state == roadsign_t::caution_no_choose)
 										{
-											cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, signal->get_desc()->get_max_speed() / 2));
+											cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, (sint32)signal->get_desc()->get_max_speed() / 2));
 										}
 										else if(next_time_interval_state == roadsign_t::clear || next_time_interval_state == roadsign_t::clear_no_choose)
 										{
@@ -5002,12 +5002,12 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 									}
 									else if(next_signal_working_method == time_interval)
 									{
-										cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, signal->get_desc()->get_max_speed() / 2));
+										cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, (sint32)signal->get_desc()->get_max_speed() / 2));
 									}
 									else // With telegraph
 									{
 										// The same as for caution
-										cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, signal->get_desc()->get_max_speed() / 2));
+										cnv->set_maximum_signal_speed(min(kmh_to_speed(sch1->get_max_speed()) / 2, (sint32)signal->get_desc()->get_max_speed() / 2));
 									}
 								}
 							}
@@ -5558,7 +5558,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 			start_index = 0;
 		}
 
-		ribi_t::ribi direction = ribi_type(route->at(max(1u,start_index)-1u), route->at(min(route->get_count()-1u,start_index+1u)));
+		ribi_t::ribi direction = ribi_type(route->at(max(1u, (uint32)start_index)-1u), route->at(min(route->get_count() - 1u, start_index + 1u)));
 		if(working_method == token_block && success == false)
 		{
 			cnv->unreserve_route();
@@ -5583,7 +5583,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 					const sint32 n = min(i, route->get_count() - 1); 
 					if(sch1->has_signal()) 
 					{
-						ribi_t::ribi direction_of_travel = ribi_type(route->at(max(1u,n)-1u), route->at(min(route->get_count()-1u,n+1u)));
+						ribi_t::ribi direction_of_travel = ribi_type(route->at(max(1, n) - 1), route->at(min(route->get_count() - 1u, n + 1u)));
 						signal_t* signal = sch1->get_signal(direction_of_travel);
 						signs.remove(gr_this);
 					}
@@ -5619,7 +5619,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 				// Restore the curtailed route above: the original route works, but the choose route does not.
 				bool re_reserve_succeeded = true;
 				const uint32 route_count = route->get_count();
-				uint32 limit = min(next_signal_index, route_count);
+				uint32 limit = min((uint32)next_signal_index, route_count);
 				for (uint32 n = curtailment_index; n < limit; n++)
 				{
 					grund_t* gr_this = welt->lookup(route->at(n));
@@ -5914,7 +5914,7 @@ void rail_vehicle_t::unreserve_in_rear()
 {
 	route_t* route = cnv ? cnv->get_route() : NULL;
 
-	route_index = min(route_index, route->get_count() - 1); 
+	route_index = min((uint32)route_index, route->get_count() - 1); 
 
 	for (int i = route_index - 1; i >= 0; i--)
 	{
@@ -5938,7 +5938,7 @@ void rail_vehicle_t::unreserve_station()
 	bool in_station = gr->get_halt().is_bound();
 	
 	route_t* route = cnv ? cnv->get_route() : NULL;
-	route_index = min(route_index, route->get_count() - 1);
+	route_index = min((uint32)route_index, route->get_count() - 1);
 	if (route->get_count() < route_index || route->empty())
 	{
 		// The route has been recalculated, so we cannot
@@ -6015,9 +6015,9 @@ void rail_vehicle_t::leave_tile()
 					{
 						route_index = route->get_count() - 1;
 					}
-					const uint16 ri = min(route_index, route->get_count() - 1u);
+					const uint16 ri = min((uint32)route_index, route->get_count() - 1u);
 					this_tile = cnv->get_route()->at(ri);
-					previous_tile = cnv->get_route()->at(max(1u, ri) - 1u);
+					previous_tile = cnv->get_route()->at(max(1u, (uint32)ri) - 1u);
 
 					if (cnv->get_schedule() && cnv->get_schedule()->get_current_eintrag().reverse)
 					{
@@ -6178,7 +6178,7 @@ void rail_vehicle_t::leave_tile()
 						{
 							// Set distant signals in the rear to caution only after the train has passed the stop signal.
 							int count = 0;
-							for(int i = min(route_index, route->get_count() - 1); i > 0; i--)
+							for(int i = min((uint32)route_index, route->get_count() - 1u); i > 0u; i--)
 							{
 								const koord3d current_pos = route->at(i);
 								grund_t* gr_route = welt->lookup(current_pos);
@@ -7592,7 +7592,7 @@ void air_vehicle_t::hop(grund_t* gr)
 		case departing: {
 			flying_height = 0;
 			target_height = h_cur;
-			new_friction = max( 1, 28/(1+(route_index-takeoff)*2) ); // 9 5 4 3 2 2 1 1...
+			new_friction = max(1u, 28u / (1u + (route_index - takeoff) * 2u)); // 9 5 4 3 2 2 1 1...
 
 			// take off, when a) end of runway or b) last tile of runway or c) has reached minimum runway length
 			weg_t *weg=welt->lookup(get_pos())->get_weg(air_wt);
