@@ -76,7 +76,7 @@ void gebaeude_t::init()
 	passengers_generated_visiting = 0;
 	passengers_succeeded_visiting = 0;
 	passenger_success_percent_last_year_visiting = 65535;
-	available_jobs_by_time = -9223372036854775807ll;
+	available_jobs_by_time = welt->get_ticks();
 }
 
 
@@ -1008,6 +1008,8 @@ void gebaeude_t::info(cbuffer_t & buf, bool dummy) const
 		buf.printf("%s (%s): %d (%d)\n", translator::translate("Jobs"), translator::translate("available"), get_adjusted_jobs(), max(0, check_remaining_available_jobs()));
 #endif
 		buf.printf("%s: %d\n", translator::translate("Mail demand/output"), get_adjusted_mail_demand());
+
+		buf.printf("Replenishment ticks: %l", welt->get_settings().get_job_replenishment_ticks()); // For TESTing only
 
 		building_desc_t const& h = *tile->get_desc();
 		buf.printf("%s%u", translator::translate("\nBauzeit von"), h.get_intro_year_month() / 12);
