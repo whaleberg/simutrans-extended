@@ -1009,7 +1009,7 @@ void gebaeude_t::info(cbuffer_t & buf, bool dummy) const
 #endif
 		buf.printf("%s: %d\n", translator::translate("Mail demand/output"), get_adjusted_mail_demand());
 
-		buf.printf("Replenishment ticks: %l", welt->get_settings().get_job_replenishment_ticks()); // For TESTing only
+		buf.printf("Replenishment ticks: %i", welt->get_settings().get_job_replenishment_ticks()); // For TESTing only
 
 		building_desc_t const& h = *tile->get_desc();
 		buf.printf("%s%u", translator::translate("\nBauzeit von"), h.get_intro_year_month() / 12);
