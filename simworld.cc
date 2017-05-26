@@ -5245,7 +5245,7 @@ rands[9] = get_random_seed();
 		cities_to_process = min(cities_awaiting_private_car_route_check.get_count() - 1u, (uint32)parallel_operations);
 		simthread_barrier_wait(&private_car_barrier); // One wait barrier to activate all the private car checker threads, the second to wait until they have all finished. This is the first.
 #else			
-		const uint32 cities_to_process = min(cities_awaiting_private_car_route_check.get_count() - 1, parallel_operations);
+		const uint32 cities_to_process = min(cities_awaiting_private_car_route_check.get_count() - 1u, (uint32)parallel_operations);
 		for (uint32 j = 0; j < cities_to_process; j++)
 		{
 			stadt_t* city = cities_awaiting_private_car_route_check.remove_first();
