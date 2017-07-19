@@ -258,6 +258,8 @@ public:
 	inline journey_times_map& get_average_journey_times() { return average_journey_times; }
 
 	sint64 calc_departures_scheduled();
+
+	sint64 get_average_service_frequency(); 
 };
 
 

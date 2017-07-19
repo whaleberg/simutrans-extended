@@ -1793,7 +1793,8 @@ uint32 haltestelle_t::get_service_frequency(halthandle_t destination, uint8 cate
 uint32 haltestelle_t::calc_service_frequency(halthandle_t destination, uint8 category) const
 {
 	uint32 service_frequency = 0;
-
+	const char* TEST_halt_destination_name = destination->get_name();
+	const char* TEST_halt_this_name = get_name();
 	for (uint32 i = 0; i < registered_lines.get_count(); i++)
 	{
 		if (!registered_lines[i]->get_goods_catg_index().is_contained(category))
@@ -1801,7 +1802,7 @@ uint32 haltestelle_t::calc_service_frequency(halthandle_t destination, uint8 cat
 			continue;
 		}
 		uint8 schedule_count = registered_lines[i]->get_schedule()->get_count();
-		uint32 timing = 0;
+		uint32 timing = world()->ticks_to_seconds(registered_lines[i]->get_average_service_frequency()) / 6u; // Convert ticks to tenths of minutes
 		bool line_serves_destination = false;
 		uint32 number_of_calls_at_this_stop = 0;
 		koord current_halt;
@@ -1816,25 +1817,7 @@ uint32 haltestelle_t::calc_service_frequency(halthandle_t destination, uint8 cat
 			else
 			{
 				next_halt = registered_lines[i]->get_schedule()->entries[0].pos.get_2d();
-			}
-			if (n < schedule_count - 1)
-			{
-				const uint32 average_time = registered_lines[i]->get_average_journey_times().get(id_pair(haltestelle_t::get_halt(current_halt, owner).get_id(), haltestelle_t::get_halt(next_halt, owner).get_id())).get_average();
-				if (average_time != 0 && average_time != UINT32_MAX_VALUE)
-				{
-					timing += average_time;
-				}
-				else
-				{
-					// Fallback to convoy's general average speed if a point-to-point average is not available.
-					const uint32 distance = shortest_distance(current_halt, next_halt);
-					const uint32 recorded_average_speed = registered_lines[i]->get_finance_history(1, LINE_AVERAGE_SPEED);
-					const uint32 average_speed = recorded_average_speed > 0 ? recorded_average_speed : speed_to_kmh(registered_lines[i]->get_convoy(0)->get_min_top_speed()) >> 1;
-					const uint32 journey_time = welt->travel_time_tenths_from_distance(distance, average_speed);
-
-					timing += journey_time;
-				}
-			}
+			}			
 
 			halthandle_t current_halthandle = haltestelle_t::get_halt(current_halt, owner);
 

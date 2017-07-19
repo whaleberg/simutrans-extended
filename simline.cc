@@ -715,3 +715,16 @@ sint64 simline_t::calc_departures_scheduled()
 
 	return timed_departure_points_count * (sint64) schedule->get_spacing();
 }
+
+sint64 simline_t::get_average_service_frequency()
+{
+	sint64 total_round_trip_time = 0;
+	FOR(vector_tpl<convoihandle_t>, const &cnv, line_managed_convoys)
+	{
+		total_round_trip_time += cnv->get_average_round_trip_time();
+	}
+
+	total_round_trip_time /= line_managed_convoys.get_count();
+
+	return total_round_trip_time;
+}
