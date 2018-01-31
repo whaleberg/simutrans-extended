@@ -3106,7 +3106,7 @@ schedule_t *convoi_t::create_schedule()
 			if (!welt->get_settings().get_simplified_maintenance())
 			{
 				const grund_t* gr = welt->lookup(get_pos());
-				const depot_t* this_depot = gr->get_depot();
+				const depot_t* this_depot = gr ? gr->get_depot() : NULL;
 				if (this_depot)
 				{
 					schedule->append(gr, 0, 0, 0, schedule_entry_t::conditional_skip);
