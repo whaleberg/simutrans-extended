@@ -269,7 +269,7 @@ static font_type large_font;
 int large_font_ascent = 9;
 int large_font_total_height = 11;
 
-#define MAX_PLAYER_COUNT (16)
+#define MAX_PLAYER_COUNT (32)
 
 #define RGBMAPSIZE (0x8000+LIGHT_COUNT+MAX_PLAYER_COUNT)
 
@@ -302,9 +302,9 @@ static PIXVAL *rgbmap_current = 0;
 /*
 * Hajo: mapping table for special-colors (AI player colors)
 * to actual output format - day&night mode
-* 16 sets of 32 colors
+* 16 sets of 16 colors
 */
-static PIXVAL specialcolormap_day_night[512];
+static PIXVAL specialcolormap_day_night[256];
 
 
 /*
@@ -730,7 +730,7 @@ static const COLOR_VAL special_pal[NUMBER_OF_PLAYER_COLOURS * 8 * 3] =
 	165, 145, 218,
 	198, 191, 232,
 
-	46, 44, 38,
+	/*46, 44, 38,
 	64, 62, 53,
 	82, 79, 68,
 	94, 91, 79,
@@ -764,7 +764,7 @@ static const COLOR_VAL special_pal[NUMBER_OF_PLAYER_COLOURS * 8 * 3] =
 	91, 27, 27,
 	101, 33, 32,
 	110, 36, 35,
-	120, 39, 38,
+	120, 39, 38,*/
 };
 
 
@@ -1970,7 +1970,7 @@ static void calc_base_pal_from_night_shift(const int night)
 		specialcolormap_day_night[i + (NUMBER_OF_PLAYER_COLOURS * 8)] = get_system_color(display_day_lights[i * 3 + 0], display_day_lights[i * 3 + 1], display_day_lights[i * 3 + 2]);
 	}
 	// init with black for forbidden colors
-	for (i = (NUMBER_OF_PLAYER_COLOURS * 8) + LIGHT_COUNT; i<512; i++) {
+	for (i = (NUMBER_OF_PLAYER_COLOURS * 8) + LIGHT_COUNT; i<256; i++) {
 		specialcolormap_day_night[i] = 0;
 	}
 	// default player colors

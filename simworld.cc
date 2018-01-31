@@ -9036,11 +9036,22 @@ DBG_MESSAGE("karte_t::load()", "init player");
 			ls.set_progress( get_size().y+(get_size().y*convoi_array.get_count())/(2*max_convoi)+128 );
 		}
 	}
-DBG_MESSAGE("karte_t::load()", "%d convois/trains loaded", convoi_array.get_count());
+	DBG_MESSAGE("karte_t::load()", "%d convois/trains loaded", convoi_array.get_count());
 
 	// now the player can be loaded
-	for(int i=0; i<MAX_PLAYER_COUNT; i++) {
-		if(  players[i]  ) {
+	uint32 player_count;
+	if (file->get_extended_version() >= 14)
+	{
+		player_count = MAX_PLAYER_COUNT;
+	}
+	else
+	{
+		player_count = OLD_MAX_PLAYER_COUNT;
+	}
+	for(int i=0; i<player_count; i++)
+	{
+		if(  players[i]  )
+		{
 			players[i]->rdwr(file);
 			settings.player_active[i] = players[i]->is_active();
 		}

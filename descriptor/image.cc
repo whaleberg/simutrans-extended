@@ -303,7 +303,7 @@ const uint8 image_t::special_pal[NUMBER_OF_PLAYER_COLOURS * 8 *3]
 	165, 145, 218,
 	198, 191, 232,
 
-	46, 44, 38,
+	/*46, 44, 38,
 	64, 62, 53,
 	82, 79, 68,
 	94, 91, 79,
@@ -337,7 +337,7 @@ const uint8 image_t::special_pal[NUMBER_OF_PLAYER_COLOURS * 8 *3]
 	91, 27, 27,
 	101, 33, 32,
 	110, 36, 35,
-	120, 39, 38,
+	120, 39, 38,*/
 };
 
 
