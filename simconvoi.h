@@ -82,9 +82,10 @@ public:
 		CONVOI_PROFIT,				//  6 | 4 | total profit of this convoi
 		CONVOI_DISTANCE,			//  7 | 5 | total distance traveled this month
 		CONVOI_REFUNDS,				//  8 |   | the refunds passengers waiting for this convoy (only when not attached to a line) have received.
+		CONVOI_DEPRECIATION,        //  9 |   | depreciation of convoy value
 //		CONVOI_MAXSPEED,			//    | 6 | average max. possible speed
 //		CONVOI_WAYTOLL,				//    | 7 |
-		MAX_CONVOI_COST				//  9 | 8 |
+		MAX_CONVOI_COST				// 10 | 8 |
 	};
 
 	/* Constants
@@ -509,7 +510,7 @@ private:
 	sint32 akt_speed;	        // current speed
 	sint32 akt_speed_soll;		// Target speed
 	sint32 sp_soll;				// steps to go
-	sint32 previous_delta_v;	// Stores the previous delta_v value; otherwise these digits are lost during calculation and vehicle do not accelrate
+	sint32 previous_delta_v;	// Stores the previous delta_v value; otherwise these digits are lost during calculation and vehicle do not accelerate
 	float32e8_t v; // current speed in m/s.
 
 	uint32 next_wolke;	// time to next smoke
@@ -517,6 +518,9 @@ private:
 	states state;
 
 	ribi_t::ribi alte_direction; //"Old direction" (Google)
+	
+	//keep the last sale value for depreciation calculation
+	sint64 last_sale_value;
 
 	/**
 	* The index number of the livery scheme of the current convoy
@@ -1072,6 +1076,9 @@ public:
 	// Increment the odometer,
 	// adjusting for the distance scale.
 	void increment_odometer(uint32 steps);
+
+	// Do bookkeeping update for vehicle depreciation stats
+	void account_for_depreciation();
 
 	/**
 	 * moving the vehicles of a convoi and acceleration/deceleration

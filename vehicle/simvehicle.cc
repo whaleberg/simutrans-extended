@@ -2293,7 +2293,10 @@ void vehicle_t::update_bookkeeping(uint32 steps)
 	   // Only the first vehicle in a convoy does this,
 	   // or else there is double counting.
 	   // NOTE: As of 9.0, increment_odometer() also adds running costs for *all* vehicles in the convoy.
-		if (leading) cnv->increment_odometer(steps);
+		if (leading) {
+			cnv->increment_odometer(steps);
+			cnv->account_for_depreciation();
+		}
 }
 
 ribi_t::ribi vehicle_t::get_direction_of_travel() const

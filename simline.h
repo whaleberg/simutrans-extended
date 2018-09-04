@@ -32,9 +32,10 @@ enum line_cost_t {
 	LINE_CONVOIS,				//  7 | 2 | number of convois for this line
 	LINE_DISTANCE,				//  8 | 6 | distance covered by all convois
 	LINE_REFUNDS,				//  9 |   | Total refunds paid to passengers/goods owners desiring to use this line but kept waiting too long to do so.
-	LINE_DEPARTURES,			// 10 |   | number of departures of convoys on this line from scheduled points
-	LINE_DEPARTURES_SCHEDULED,	// 11 |   | number of departures scheduled on this line from scheduled departure points
-	MAX_LINE_COST				// 12 | 9 | Total number of cost items
+	LINE_DEPRECIATION,          // 10 |   | depreciation of the value of vehicles included in this line
+	LINE_DEPARTURES,			// 11 |   | number of departures of convoys on this line from scheduled points
+	LINE_DEPARTURES_SCHEDULED,	// 12 |   | number of departures scheduled on this line from scheduled departure points
+	MAX_LINE_COST				// 13 | 9 | Total number of cost items
 };
 
 class karte_ptr_t;

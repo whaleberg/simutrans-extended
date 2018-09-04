@@ -124,6 +124,7 @@ void convoi_t::reset()
 	is_electric = false;
 	//sum_gesamtweight = sum_weight = 0;
 	previous_delta_v = 0;
+	last_sale_value = 0;
 
 	withdraw = false;
 	has_obsolete = false;
@@ -859,6 +860,18 @@ void convoi_t::add_running_cost(sint64 cost, const weg_t *weg)
 	book( cost, CONVOI_OPERATIONS );
 	book( cost, CONVOI_PROFIT );
 }
+
+void convoi_t::account_for_depreciation()
+{
+	const sint64 current_sale_value = calc_sale_value();
+	if (last_sale_value != 0)
+	{
+		const sint64 depreciation = current_sale_value - last_sale_value;
+		book(depreciation, CONVOI_DEPRECIATION);
+	}
+	last_sale_value = current_sale_value;
+}
+
 
 void convoi_t::increment_odometer(uint32 steps)
 {
@@ -7966,6 +7979,7 @@ sint64 convoi_t::get_stat_converted(int month, convoi_cost_t cost_type) const
 		case CONVOI_OPERATIONS:
 		case CONVOI_PROFIT:
 		case CONVOI_REFUNDS:
+		case CONVOI_DEPRECIATION:
 			value = convert_money(value);
 			break;
 		default: ;

@@ -54,7 +54,8 @@ static const char cost_type[BUTTON_COUNT][64] =
 	"Operation", 
 	"Profit", 
 	"Distance", 
-	"Refunds"
+	"Refunds",
+	"Depreciation"
 	//, "Maxspeed"
 	//, "Way toll"
 #ifdef ACCELERATION_BUTTON
@@ -90,6 +91,7 @@ static const bool cost_type_money[BUTTON_COUNT] =
 	true, 
 	true, 
 	false,
+	true,
 	true
 	//, false
 	//, true
