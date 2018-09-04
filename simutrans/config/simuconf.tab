@@ -42,6 +42,7 @@ userdir_overrides_savegame_settings = 0
 #pak_file_path = pak.japan/
 #pak_file_path = pak.winter/
 #pak_file_path = pak.ttd/
+pak_file_path = pak128.britain-ex-nightly/
 
 # The maximum number of position tested during a way search
 # Consumes 16*x Bytes main memory, where x is the "max_route_steps" value.
